@@ -299,8 +299,9 @@ void setup() {
   status_s300 = initialize_s300();
   // PWM Pin implementation (pump)
   pinMode(19, OUTPUT);
-  ledcSetup(0, 200, 8);
-  ledcAttachPin(19, 0);
+  // ledcSetup(0, 200, 8); Old LEDC
+  // ledcAttachPin(19, 0); Old LEDC
+  ledcAttach(19,200,8);  // Migrated fro 2.x to 3.x ESP core
   Serial.println("Setup finished");
 }
 void loop() {
