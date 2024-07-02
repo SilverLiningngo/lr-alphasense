@@ -1,30 +1,31 @@
-/ LittleFS initialization
+// LittleFS initialization
 #include <Arduino.h>
-#include <LITTLEFS.h>
+//#include <LITTLEFS.h>  //Old LOROL version of littleFS.  New one is included in Arduino ESP32 Core
+#include <LittleFS.h>
 bool Status_File_System = false;
 bool initialize_littlefs_format_file_system() {
-  if (!LITTLEFS.begin(false)) {
-    Serial.println("LITTLEFS mount failed");
+  if (!LittleFS.begin(false)) {
+    Serial.println("LittleFS mount failed");
     Serial.println("No filesystem found; formatting...");
-    if (!LITTLEFS.begin(true)) {
-      Serial.println("LITTLEFS mount failed");
+    if (!LittleFS.begin(true)) {
+      Serial.println("LittleFS mount failed");
       Serial.println("Formatting not possible");
       return false;
     } else {
       Serial.println("Formatting successful");
       Serial.println("Information on the filesystem:");
-      Serial.printf("- Bytes total:   %ld\n", LITTLEFS.totalBytes());
-      Serial.printf("- Bytes used: %ld\n\n", LITTLEFS.usedBytes());
+      Serial.printf("- Bytes total:   %ld\n", LittleFS.totalBytes());
+      Serial.printf("- Bytes used: %ld\n\n", LittleFS.usedBytes());
       return true;
     }
   }
   Serial.println("Information on the filesystem:");
-  Serial.printf("- Bytes total:   %ld\n", LITTLEFS.totalBytes());
-  Serial.printf("- Bytes used: %ld\n\n", LITTLEFS.usedBytes());
+  Serial.printf("- Bytes total:   %ld\n", LittleFS.totalBytes());
+  Serial.printf("- Bytes used: %ld\n\n", LittleFS.usedBytes());
   return true;
 }
 bool write_string_to_file(String filename, String string) {
-  File file = LITTLEFS.open(filename, "a");
+  File file = LittleFS.open(filename, "a");
   if (!file) {
     Serial.println("There was an error opening the file for appending");
     return false;
@@ -41,7 +42,7 @@ bool write_string_to_file(String filename, String string) {
   return false;
 }
 bool read_file_and_print_to_serial(String filename) {
-  File file = LITTLEFS.open(filename, "r");
+  File file = LittleFS.open(filename, "r");
   if (!file) {
     Serial.println("There was an error opening the file for reading");
     return false;
@@ -56,7 +57,7 @@ bool delete_file(String filename) {
   Serial.print("Delete file: ");
   Serial.print(filename);
   Serial.print(" ");
-  if (LITTLEFS.remove(filename)) {
+  if (LittleFS.remove(filename)) {
     Serial.println("- File deleted");
     return true;
   } else {
@@ -835,3 +836,4 @@ void loop() {
   Serial.print(write_to_file_string);
   ESP_BT.print(write_to_file_string);
   delay(1000);
+}
