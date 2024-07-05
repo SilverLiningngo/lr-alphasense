@@ -199,7 +199,7 @@ float Pressure = 0;
 float Humidity = 0;
 bool StatusBMESensor = false;
 bool initialize_bme_sensor() {
-  StatusBMESensor = bme.begin(0x77);
+  StatusBMESensor = bme.begin(0x76);
   if (!StatusBMESensor) {
     Serial.println("Could not find a valid BME280 sensor!");
     StatusBMESensor = false;
