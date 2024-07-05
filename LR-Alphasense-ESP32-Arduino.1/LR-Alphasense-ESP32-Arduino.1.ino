@@ -1,3 +1,8 @@
+#define FLOW_ANALOG_PIN 36 // old 12
+#define SO2_ANALOG_PIN 39 // old 26
+#define NC_ANALOG_PIN 34 // old 34 - don't know what this does
+#define BATT_ANALOG_PIN 35
+#define MOTOR_PWM_PIN 19
 // LittleFS initialization
 #include <Arduino.h>
 //#include <LITTLEFS.h>  //Old LOROL version of littleFS.  New one is included in Arduino ESP32 Core
@@ -287,9 +292,9 @@ void setup() {
   InitialiseSerial(115200);
   InitialiseRFDSerial();
   InitialiseBluetooth();
-  pinMode(12, INPUT);
-  pinMode(26, INPUT);
-  pinMode(34, INPUT);
+  pinMode(FLOW_ANALOG_PIN, INPUT);
+  pinMode(SO2_ANALOG_PIN, INPUT);
+  pinMode(NC_ANALOG_PIN, INPUT);
   Status_File_System = initialize_littlefs_format_file_system();
   if (Status_File_System) {
     Serial.println("File system initialized");
@@ -298,10 +303,10 @@ void setup() {
   status_GPS_module = initialize_GPS();
   status_s300 = initialize_s300();
   // PWM Pin implementation (pump)
-  pinMode(19, OUTPUT);
+  pinMode(MOTOR_PWM_PIN, OUTPUT);
   // ledcSetup(0, 200, 8); Old LEDC
   // ledcAttachPin(19, 0); Old LEDC
-  ledcAttach(19,200,8);  // Migrated fro 2.x to 3.x ESP core
+  ledcAttach(MOTOR_PWM_PIN,200,8);  // Migrated fro 2.x to 3.x ESP core
   Serial.println("Setup finished");
 }
 void loop() {
@@ -760,40 +765,40 @@ void loop() {
   }
   // Get analog voltages from pins
   // flow meter
-  float SI_voltage_pin_12 = readSIVoltageFromPin(12, 10, 12, 3.3);
-  if (SI_voltage_pin_12 >= 3.7) {
-    Serial.print("Problem with ADC on Pin 12; measured voltage=");
-    Serial.println(SI_voltage_pin_12);
-    ESP_BT.print("Problem with ADC on Pin 12; measured voltage=");
-    ESP_BT.println(SI_voltage_pin_12);
-    SerialRFD.print("Problem with ADC on Pin 12; measured voltage=");
-    SerialRFD.println(SI_voltage_pin_12);
+  float SI_voltage_pin_FLOW = readSIVoltageFromPin(FLOW_ANALOG_PIN, 10, 12, 3.3);
+  if (SI_voltage_pin_FLOW >= 3.7) {
+    Serial.print("Problem with ADC on Pin FLOW; measured voltage=");
+    Serial.println(SI_voltage_pin_FLOW);
+    ESP_BT.print("Problem with ADC on Pin FLOW; measured voltage=");
+    ESP_BT.println(SI_voltage_pin_FLOW);
+    SerialRFD.print("Problem with ADC on Pin FLOW; measured voltage=");
+    SerialRFD.println(SI_voltage_pin_FLOW);
   }
   // SO2
-  float SI_voltage_pin_26 = readSIVoltageFromPin(26, 10, 12, 3.3);
-  if (SI_voltage_pin_26 >= 3.7) {
-    Serial.print("Problem with ADC on Pin 26; measured voltage=");
-    Serial.println(SI_voltage_pin_26);
-    ESP_BT.print("Problem with ADC on Pin 26; measured voltage=");
-    ESP_BT.println(SI_voltage_pin_26);
-    SerialRFD.print("Problem with ADC on Pin 26; measured voltage=");
-    SerialRFD.println(SI_voltage_pin_26);
+  float SI_voltage_pin_SO2 = readSIVoltageFromPin(SO2_ANALOG_PIN, 10, 12, 3.3);
+  if (SI_voltage_pin_SO2 >= 3.7) {
+    Serial.print("Problem with ADC on Pin SO2; measured voltage=");
+    Serial.println(SI_voltage_pin_SO2);
+    ESP_BT.print("Problem with ADC on Pin SO2; measured voltage=");
+    ESP_BT.println(SI_voltage_pin_SO2);
+    SerialRFD.print("Problem with ADC on Pin SO2; measured voltage=");
+    SerialRFD.println(SI_voltage_pin_SO2);
   }
   // NC
-  float SI_voltage_pin_34 = readSIVoltageFromPin(34, 10, 12, 3.3);
-  if (SI_voltage_pin_34 >= 3.7) {
-    Serial.print("Problem with ADC on Pin 34; measured voltage=");
-    Serial.println(SI_voltage_pin_34);
-    ESP_BT.print("Problem with ADC on Pin 34; measured voltage=");
-    ESP_BT.println(SI_voltage_pin_34);
-    SerialRFD.print("Problem with ADC on Pin 34; measured voltage=");
-    SerialRFD.println(SI_voltage_pin_34);
+  float SI_voltage_pin_NC = readSIVoltageFromPin(NC_ANALOG_PIN, 10, 12, 3.3);
+  if (SI_voltage_pin_NC >= 3.7) {
+    Serial.print("Problem with ADC on Pin NC; measured voltage=");
+    Serial.println(SI_voltage_pin_NC);
+    ESP_BT.print("Problem with ADC on Pin NC; measured voltage=");
+    ESP_BT.println(SI_voltage_pin_NC);
+    SerialRFD.print("Problem with ADC on Pin NC; measured voltage=");
+    SerialRFD.println(SI_voltage_pin_NC);
   }
-  write_to_file_string += String(SI_voltage_pin_12, 4);
+  write_to_file_string += String(SI_voltage_pin_FLOW, 4);
   write_to_file_string += ",";
-  write_to_file_string += String(SI_voltage_pin_26, 4);
+  write_to_file_string += String(SI_voltage_pin_SO2, 4);
   write_to_file_string += ",";
-  write_to_file_string += String(SI_voltage_pin_34, 4);
+  write_to_file_string += String(SI_voltage_pin_NC, 4);
   write_to_file_string += ",";
   // Get data from CO2 Sensor
   co2 = get_co2();
