@@ -198,6 +198,7 @@ float Temperature = 0;
 float Pressure = 0;
 float Humidity = 0;
 bool StatusBMESensor = false;
+bool StatusHDCSensor = false;
 bool initialize_bme_sensor() {
   StatusBMESensor = bme.begin(0x76);
   if (!StatusBMESensor) {
@@ -207,6 +208,24 @@ bool initialize_bme_sensor() {
   }
   Serial.println("Initialization of BME Sensor done.");
   StatusBMESensor = true;
+  return true;
+}
+// HDC2080 Humidity Sensor Implementation
+#include <HDC2080.h>
+HDC2080 hdc(0x40); //HDC2080 Sensor Object
+float hdcHumidity = 0;
+float hdcTemperature = 0;
+bool initialize_hdc_sensor() {
+  hdc.begin();
+  hdc.reset();
+  hdc.setMeasurementMode(TEMP_AND_HUMID);  // Set measurements to temperature and humidity
+  hdc.setRate(ONE_HZ);                     // Set measurement frequency to 1 Hz
+  hdc.setTempRes(FOURTEEN_BIT);
+  hdc.setHumidRes(FOURTEEN_BIT);
+  //begin measuring
+  hdc.triggerMeasurement();
+  StatusHDCSensor = true;
+  Serial.println("HDC Humidity Sensor Initialized");
   return true;
 }
 // GPS implementation
@@ -320,6 +339,7 @@ void setup() {
     Serial.println("File system initialized");
   }
   StatusBMESensor = initialize_bme_sensor();
+  StatusHDCSensor = initialize_hdc_sensor();
   status_GPS_module = initialize_GPS();
   status_s300 = initialize_s300();
   // PWM Pin implementation (pump)
@@ -782,6 +802,15 @@ void loop() {
     SerialRFD.println("No BME sensor available!!");
     StatusBMESensor = initialize_bme_sensor();
     write_to_file_string += "No BME Sensor available,,,";
+  }
+  if (StatusHDCSensor) {
+    hdcHumidity = hdc.readHumidity();
+    hdcTemperature = hdc.readTemp();
+    //Serial.print("HDC Sensor Temp (C): "); Serial.print(hdcTemperature);
+    //Serial.print(", RH:"); Serial.println(hdcHumidity);
+  }
+  else {
+    Serial.println("No HDC sensor available!!");
   }
   // Get analog voltages from pins
   // flow meter
