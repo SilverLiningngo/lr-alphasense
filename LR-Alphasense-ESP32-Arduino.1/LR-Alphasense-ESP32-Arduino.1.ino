@@ -1,8 +1,8 @@
 #define FLOW_ANALOG_PIN 36 // old 12
 #define SO2_ANALOG_PIN 39 // old 26
-#define NC_ANALOG_PIN 34 // old 34 - don't know what this does
-#define BATT_ANALOG_PIN 35
+#define BATT_ANALOG_PIN 35 // old NC 34
 #define MOTOR_PWM_PIN 19
+const float BATT_VOLTAGE_SCALING = 8.73; // scaling factor for voltage divider
 // LittleFS initialization
 #include <Arduino.h>
 //#include <LITTLEFS.h>  //Old LOROL version of littleFS.  New one is included in Arduino ESP32 Core
@@ -314,7 +314,7 @@ void setup() {
   InitialiseBluetooth();
   pinMode(FLOW_ANALOG_PIN, INPUT);
   pinMode(SO2_ANALOG_PIN, INPUT);
-  pinMode(NC_ANALOG_PIN, INPUT);
+  pinMode(BATT_ANALOG_PIN, INPUT);
   Status_File_System = initialize_littlefs_format_file_system();
   if (Status_File_System) {
     Serial.println("File system initialized");
@@ -804,21 +804,21 @@ void loop() {
     SerialRFD.print("Problem with ADC on Pin SO2; measured voltage=");
     SerialRFD.println(SI_voltage_pin_SO2);
   }
-  // NC
-  float SI_voltage_pin_NC = readSIVoltageFromPin(NC_ANALOG_PIN, 10, 12, 3.3);
-  if (SI_voltage_pin_NC >= 3.7) {
-    Serial.print("Problem with ADC on Pin NC; measured voltage=");
-    Serial.println(SI_voltage_pin_NC);
-    ESP_BT.print("Problem with ADC on Pin NC; measured voltage=");
-    ESP_BT.println(SI_voltage_pin_NC);
-    SerialRFD.print("Problem with ADC on Pin NC; measured voltage=");
-    SerialRFD.println(SI_voltage_pin_NC);
+  // Battery voltage
+  float SI_voltage_pin_BATT = readSIVoltageFromPin(BATT_ANALOG_PIN, 10, 12, 3.3);
+  float actual_batt_voltage = SI_voltage_pin_BATT * BATT_VOLTAGE_SCALING;
+  if (SI_voltage_pin_BATT >= 3.7) {
+    Serial.print("Problem with ADC on Pin BATT; ADC voltage=");
+    Serial.println(SI_voltage_pin_BATT);
+    ESP_BT.print("Problem with ADC on Pin BATT; ADC voltage=");
+    ESP_BT.println(SI_voltage_pin_BATT);
+    SerialRFD.print("Problem with ADC on Pin BATT; ADC voltage=");
   }
   write_to_file_string += String(SI_voltage_pin_FLOW, 4);
   write_to_file_string += ",";
   write_to_file_string += String(SI_voltage_pin_SO2, 4);
   write_to_file_string += ",";
-  write_to_file_string += String(SI_voltage_pin_NC, 4);
+  write_to_file_string += String(actual_batt_voltage, 4);
   write_to_file_string += ",";
   // Get data from CO2 Sensor
   co2 = get_co2();
