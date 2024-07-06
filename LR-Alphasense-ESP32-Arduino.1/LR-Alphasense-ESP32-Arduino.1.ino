@@ -250,6 +250,9 @@ bool clearGPS() { // Delete previously acquired data from GPS
   return true;
 }
 bool initialize_GPS() { // Setup of GPS Module
+   // Initialize UART2 for the GPS module with 9600 baud rate
+  GPSSerial.begin(9600, SERIAL_8N1, 16, 17); // RX on GPIO16, TX on GPIO17
+
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
