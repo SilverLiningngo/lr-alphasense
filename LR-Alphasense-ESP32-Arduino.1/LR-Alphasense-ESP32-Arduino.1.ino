@@ -269,24 +269,41 @@ bool initialize_GPS() { // Setup of GPS Module
   return true;
 }
 // S300 Sensor
-int co2 = 0;
+unsigned int co2 = 0;
 #include "s300i2c.h"
 #include <Wire.h>
 S300I2C s3(Wire); // S300 object
 bool status_s300 = false;
-bool initialize_s300() {
-  Wire.begin();
-  s3.begin(S300I2C_ADDR);
-  delay(10000);
-  s3.wakeup();
-  s3.end_mcdl();
-  s3.end_acdl();
-  Serial.println("S300 CO2 Initialized");
-  return true;
+bool check_sensor_presence(uint8_t address) {
+  Wire.beginTransmission(address);
+  if (Wire.endTransmission() == 0) {
+    return true; // Sensor acknowledged
+  }
+  return false; // Sensor did not acknowledge
 }
-int get_co2() {
-  co2 = s3.getCO2ppm();
-  return co2;
+bool initialize_s300() {
+  Serial.print("S300 CO2 sensor... ");
+  Wire.begin();
+  // Test to see if the CO2 sensor is present, the library "begin" function never returns false
+  if (!check_sensor_presence(S300I2C_ADDR)) {
+    Serial.println("not found!");
+    return false;
+  }
+    s3.begin(S300I2C_ADDR);
+    delay(10000);
+    s3.wakeup();
+    s3.end_mcdl();
+    s3.end_acdl();
+    Serial.println("Initialized");
+    return true;
+}
+unsigned int get_co2() {
+  unsigned int co2temporary = 0;
+  // Test every time to see if the CO2 sensor is still present, else return 0.
+  if (check_sensor_presence(S300I2C_ADDR)) {  
+    co2temporary = s3.getCO2ppm();
+  }
+  return co2temporary;
 }
 int pump_pwm = 0;
 String filename = "/datalogger.txt";
