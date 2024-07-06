@@ -813,6 +813,7 @@ void loop() {
     ESP_BT.print("Problem with ADC on Pin BATT; ADC voltage=");
     ESP_BT.println(SI_voltage_pin_BATT);
     SerialRFD.print("Problem with ADC on Pin BATT; ADC voltage=");
+    SerialRFD.println(SI_voltage_pin_BATT);
   }
   write_to_file_string += String(SI_voltage_pin_FLOW, 4);
   write_to_file_string += ",";
