@@ -344,9 +344,7 @@ void setup() {
   status_s300 = initialize_s300();
   // PWM Pin implementation (pump)
   pinMode(MOTOR_PWM_PIN, OUTPUT);
-  // ledcSetup(0, 200, 8); Old LEDC
-  // ledcAttachPin(19, 0); Old LEDC
-  ledcAttach(MOTOR_PWM_PIN,200,8);  // Migrated fro 2.x to 3.x ESP core
+  ledcAttach(MOTOR_PWM_PIN,200,8);
   Serial.println("Setup finished");
 }
 void loop() {
@@ -383,117 +381,117 @@ void loop() {
       delete_file(filename);
     }
     else if ((strcmp(StringInputSpeicher, "pump_on")) == 0) {
-      digitalWrite(26, HIGH);
-      ledcWrite(0, 254);
+      digitalWrite(MOTOR_PWM_PIN, HIGH);
+      ledcWrite(MOTOR_PWM_PIN, 254);
       pump_pwm = 254;
     }
     else if ((strcmp(StringInputSpeicher, "pump_off")) == 0) {
-      digitalWrite(26, LOW);
-      ledcWrite(0, 0);
+      digitalWrite(MOTOR_PWM_PIN, LOW);
+      ledcWrite(MOTOR_PWM_PIN, 0);
       pump_pwm = 0;
     }
     else if ((strcmp(StringInputSpeicher, "0")) == 0) {
-      ledcWrite(0, 0);
+      ledcWrite(MOTOR_PWM_PIN, 0);
       pump_pwm = 0;
     }
     else if ((strcmp(StringInputSpeicher, "10")) == 0) {
-      ledcWrite(0, 10);
+      ledcWrite(MOTOR_PWM_PIN, 10);
       pump_pwm = 10;
     }
     else if ((strcmp(StringInputSpeicher, "20")) == 0) {
-      ledcWrite(0, 20);
+      ledcWrite(MOTOR_PWM_PIN, 20);
       pump_pwm = 20;
     }
     else if ((strcmp(StringInputSpeicher, "30")) == 0) {
-      ledcWrite(0, 30);
+      ledcWrite(MOTOR_PWM_PIN, 30);
       pump_pwm = 30;
     }
     else if ((strcmp(StringInputSpeicher, "40")) == 0) {
-      ledcWrite(0, 40);
+      ledcWrite(MOTOR_PWM_PIN, 40);
       pump_pwm = 40;
     }
     else if ((strcmp(StringInputSpeicher, "50")) == 0) {
-      ledcWrite(0, 50);
+      ledcWrite(MOTOR_PWM_PIN, 50);
       pump_pwm = 50;
     }
     else if ((strcmp(StringInputSpeicher, "60")) == 0) {
-      ledcWrite(0, 60);
+      ledcWrite(MOTOR_PWM_PIN, 60);
       pump_pwm = 60;
     }
     else if ((strcmp(StringInputSpeicher, "70")) == 0) {
-      ledcWrite(0, 70);
+      ledcWrite(MOTOR_PWM_PIN, 70);
       pump_pwm = 70;
     }
     else if ((strcmp(StringInputSpeicher, "80")) == 0) {
-      ledcWrite(0, 80);
+      ledcWrite(MOTOR_PWM_PIN, 80);
       pump_pwm = 80;
     }
     else if ((strcmp(StringInputSpeicher, "90")) == 0) {
-      ledcWrite(0, 90);
+      ledcWrite(MOTOR_PWM_PIN, 90);
       pump_pwm = 90;
     }
     else if ((strcmp(StringInputSpeicher, "100")) == 0) {
-      ledcWrite(0, 100);
+      ledcWrite(MOTOR_PWM_PIN, 100);
       pump_pwm = 100;
     }
     else if ((strcmp(StringInputSpeicher, "110")) == 0) {
-      ledcWrite(0, 110);
+      ledcWrite(MOTOR_PWM_PIN, 110);
       pump_pwm = 110;
     }
     else if ((strcmp(StringInputSpeicher, "120")) == 0) {
-      ledcWrite(0, 120);
+      ledcWrite(MOTOR_PWM_PIN, 120);
       pump_pwm = 120;
     }
     else if ((strcmp(StringInputSpeicher, "130")) == 0) {
-      ledcWrite(0, 130);
+      ledcWrite(MOTOR_PWM_PIN, 130);
       pump_pwm = 130;
     }
     else if ((strcmp(StringInputSpeicher, "140")) == 0) {
-      ledcWrite(0, 140);
+      ledcWrite(MOTOR_PWM_PIN, 140);
       pump_pwm = 140;
     }
     else if ((strcmp(StringInputSpeicher, "150")) == 0) {
-      ledcWrite(0, 150);
+      ledcWrite(MOTOR_PWM_PIN, 150);
       pump_pwm = 150;
     }
     else if ((strcmp(StringInputSpeicher, "160")) == 0) {
-      ledcWrite(0, 160);
+      ledcWrite(MOTOR_PWM_PIN, 160);
       pump_pwm = 160;
     }
     else if ((strcmp(StringInputSpeicher, "170")) == 0) {
-      ledcWrite(0, 170);
+      ledcWrite(MOTOR_PWM_PIN, 170);
       pump_pwm = 170;
     }
     else if ((strcmp(StringInputSpeicher, "180")) == 0) {
-      ledcWrite(0, 180);
+      ledcWrite(MOTOR_PWM_PIN, 180);
       pump_pwm = 180;
     }
     else if ((strcmp(StringInputSpeicher, "190")) == 0) {
-      ledcWrite(0, 190);
+      ledcWrite(MOTOR_PWM_PIN, 190);
       pump_pwm = 190;
     }
     else if ((strcmp(StringInputSpeicher, "200")) == 0) {
-      ledcWrite(0, 200);
+      ledcWrite(MOTOR_PWM_PIN, 200);
       pump_pwm = 200;
     }
     else if ((strcmp(StringInputSpeicher, "210")) == 0) {
-      ledcWrite(0, 210);
+      ledcWrite(MOTOR_PWM_PIN, 210);
       pump_pwm = 210;
     }
     else if ((strcmp(StringInputSpeicher, "220")) == 0) {
-      ledcWrite(0, 220);
+      ledcWrite(MOTOR_PWM_PIN, 220);
       pump_pwm = 220;
     }
     else if ((strcmp(StringInputSpeicher, "230")) == 0) {
-      ledcWrite(0, 230);
+      ledcWrite(MOTOR_PWM_PIN, 230);
       pump_pwm = 230;
     }
     else if ((strcmp(StringInputSpeicher, "240")) == 0) {
-      ledcWrite(0, 240);
+      ledcWrite(MOTOR_PWM_PIN, 240);
       pump_pwm = 240;
     }
     else if ((strcmp(StringInputSpeicher, "250")) == 0) {
-      ledcWrite(0, 250);
+      ledcWrite(MOTOR_PWM_PIN, 250);
       pump_pwm = 250;
     }
   }
@@ -526,117 +524,117 @@ void loop() {
     }
     else if ((strcmp(BluetoothInputSpeicher, "pump_on")) == 0) {
       digitalWrite(26, HIGH);
-      ledcWrite(0, 254);
+      ledcWrite(MOTOR_PWM_PIN, 254);
       pump_pwm = 254;
     }
     else if ((strcmp(BluetoothInputSpeicher, "pump_off")) == 0) {
       digitalWrite(26, LOW);
-      ledcWrite(0, 0);
+      ledcWrite(MOTOR_PWM_PIN, 0);
       pump_pwm = 0;
     }
     else if ((strcmp(BluetoothInputSpeicher, "0")) == 0) {
-      ledcWrite(0, 0);
+      ledcWrite(MOTOR_PWM_PIN, 0);
       pump_pwm = 0;
     }
     else if ((strcmp(BluetoothInputSpeicher, "10")) == 0) {
-      ledcWrite(0, 10);
+      ledcWrite(MOTOR_PWM_PIN, 10);
       pump_pwm = 10;
     }
     else if ((strcmp(BluetoothInputSpeicher, "20")) == 0) {
-      ledcWrite(0, 20);
+      ledcWrite(MOTOR_PWM_PIN, 20);
       pump_pwm = 20;
     }
     else if ((strcmp(BluetoothInputSpeicher, "30")) == 0) {
-      ledcWrite(0, 30);
+      ledcWrite(MOTOR_PWM_PIN, 30);
       pump_pwm = 30;
     }
     else if ((strcmp(BluetoothInputSpeicher, "40")) == 0) {
-      ledcWrite(0, 40);
+      ledcWrite(MOTOR_PWM_PIN, 40);
       pump_pwm = 40;
     }
     else if ((strcmp(BluetoothInputSpeicher, "50")) == 0) {
-      ledcWrite(0, 50);
+      ledcWrite(MOTOR_PWM_PIN, 50);
       pump_pwm = 50;
     }
     else if ((strcmp(BluetoothInputSpeicher, "60")) == 0) {
-      ledcWrite(0, 60);
+      ledcWrite(MOTOR_PWM_PIN, 60);
       pump_pwm = 60;
     }
     else if ((strcmp(BluetoothInputSpeicher, "70")) == 0) {
-      ledcWrite(0, 70);
+      ledcWrite(MOTOR_PWM_PIN, 70);
       pump_pwm = 70;
     }
     else if ((strcmp(BluetoothInputSpeicher, "80")) == 0) {
       // Try to read Bluetooth serial input and execute command
-      ledcWrite(0, 80);
+      ledcWrite(MOTOR_PWM_PIN, 80);
       pump_pwm = 80;
     }
     else if ((strcmp(BluetoothInputSpeicher, "90")) == 0) {
-      ledcWrite(0, 90);
+      ledcWrite(MOTOR_PWM_PIN, 90);
       pump_pwm = 90;
     }
     else if ((strcmp(BluetoothInputSpeicher, "100")) == 0) {
-      ledcWrite(0, 100);
+      ledcWrite(MOTOR_PWM_PIN, 100);
       pump_pwm = 100;
     }
     else if ((strcmp(BluetoothInputSpeicher, "110")) == 0) {
-      ledcWrite(0, 110);
+      ledcWrite(MOTOR_PWM_PIN, 110);
       pump_pwm = 110;
     }
     else if ((strcmp(BluetoothInputSpeicher, "120")) == 0) {
-      ledcWrite(0, 120);
+      ledcWrite(MOTOR_PWM_PIN, 120);
       pump_pwm = 120;
     }
     else if ((strcmp(BluetoothInputSpeicher, "130")) == 0) {
-      ledcWrite(0, 130);
+      ledcWrite(MOTOR_PWM_PIN, 130);
       pump_pwm = 130;
     }
     else if ((strcmp(BluetoothInputSpeicher, "140")) == 0) {
-      ledcWrite(0, 140);
+      ledcWrite(MOTOR_PWM_PIN, 140);
       pump_pwm = 140;
     }
     else if ((strcmp(BluetoothInputSpeicher, "150")) == 0) {
-      ledcWrite(0, 150);
+      ledcWrite(MOTOR_PWM_PIN, 150);
       pump_pwm = 150;
     }
     else if ((strcmp(BluetoothInputSpeicher, "160")) == 0) {
-      ledcWrite(0, 160);
+      ledcWrite(MOTOR_PWM_PIN, 160);
       pump_pwm = 160;
     }
     else if ((strcmp(BluetoothInputSpeicher, "170")) == 0) {
-      ledcWrite(0, 170);
+      ledcWrite(MOTOR_PWM_PIN, 170);
       pump_pwm = 170;
     }
     else if ((strcmp(BluetoothInputSpeicher, "180")) == 0) {
-      ledcWrite(0, 180);
+      ledcWrite(MOTOR_PWM_PIN, 180);
       pump_pwm = 180;
     }
     else if ((strcmp(BluetoothInputSpeicher, "190")) == 0) {
-      ledcWrite(0, 190);
+      ledcWrite(MOTOR_PWM_PIN, 190);
       pump_pwm = 190;
     }
     else if ((strcmp(BluetoothInputSpeicher, "200")) == 0) {
-      ledcWrite(0, 200);
+      ledcWrite(MOTOR_PWM_PIN, 200);
       pump_pwm = 200;
     }
     else if ((strcmp(BluetoothInputSpeicher, "210")) == 0) {
-      ledcWrite(0, 210);
+      ledcWrite(MOTOR_PWM_PIN, 210);
       pump_pwm = 210;
     }
     else if ((strcmp(BluetoothInputSpeicher, "220")) == 0) {
-      ledcWrite(0, 220);
+      ledcWrite(MOTOR_PWM_PIN, 220);
       pump_pwm = 220;
     }
     else if ((strcmp(BluetoothInputSpeicher, "230")) == 0) {
-      ledcWrite(0, 230);
+      ledcWrite(MOTOR_PWM_PIN, 230);
       pump_pwm = 230;
     }
     else if ((strcmp(BluetoothInputSpeicher, "240")) == 0) {
-      ledcWrite(0, 240);
+      ledcWrite(MOTOR_PWM_PIN, 240);
       pump_pwm = 240;
     }
     else if ((strcmp(BluetoothInputSpeicher, "250")) == 0) {
-      ledcWrite(0, 250);
+      ledcWrite(MOTOR_PWM_PIN, 250);
       pump_pwm = 250;
     }
   }
@@ -670,116 +668,116 @@ void loop() {
     }
     else if ((strcmp(RFDStringInputSpeicher, "pump_on")) == 0) {
       digitalWrite(26, HIGH);
-      ledcWrite(0, 254);
+      ledcWrite(MOTOR_PWM_PIN, 254);
       pump_pwm = 254;
     }
     else if ((strcmp(RFDStringInputSpeicher, "pump_off")) == 0) {
       digitalWrite(26, LOW);
-      ledcWrite(0, 0);
+      ledcWrite(MOTOR_PWM_PIN, 0);
       pump_pwm = 0;
     }
     else if ((strcmp(RFDStringInputSpeicher, "0")) == 0) {
-      ledcWrite(0, 0);
+      ledcWrite(MOTOR_PWM_PIN, 0);
       pump_pwm = 0;
     }
     else if ((strcmp(RFDStringInputSpeicher, "10")) == 0) {
-      ledcWrite(0, 10);
+      ledcWrite(MOTOR_PWM_PIN, 10);
       pump_pwm = 10;
     }
     else if ((strcmp(RFDStringInputSpeicher, "20")) == 0) {
-      ledcWrite(0, 20);
+      ledcWrite(MOTOR_PWM_PIN, 20);
       pump_pwm = 20;
     }
     else if ((strcmp(RFDStringInputSpeicher, "30")) == 0) {
-      ledcWrite(0, 30);
+      ledcWrite(MOTOR_PWM_PIN, 30);
       pump_pwm = 30;
     }
     else if ((strcmp(RFDStringInputSpeicher, "40")) == 0) {
-      ledcWrite(0, 40);
+      ledcWrite(MOTOR_PWM_PIN, 40);
       pump_pwm = 40;
     }
     else if ((strcmp(RFDStringInputSpeicher, "50")) == 0) {
-      ledcWrite(0, 50);
+      ledcWrite(MOTOR_PWM_PIN, 50);
       pump_pwm = 50;
     }
     else if ((strcmp(RFDStringInputSpeicher, "60")) == 0) {
-      ledcWrite(0, 60);
+      ledcWrite(MOTOR_PWM_PIN, 60);
       pump_pwm = 60;
     }
     else if ((strcmp(RFDStringInputSpeicher, "70")) == 0) {
-      ledcWrite(0, 70);
+      ledcWrite(MOTOR_PWM_PIN, 70);
       pump_pwm = 70;
     }
     else if ((strcmp(RFDStringInputSpeicher, "80")) == 0) {
-      ledcWrite(0, 80);
+      ledcWrite(MOTOR_PWM_PIN, 80);
       pump_pwm = 80;
     }
     else if ((strcmp(RFDStringInputSpeicher, "90")) == 0) {
-      ledcWrite(0, 90);
+      ledcWrite(MOTOR_PWM_PIN, 90);
       pump_pwm = 90;
     }
     else if ((strcmp(RFDStringInputSpeicher, "100")) == 0) {
-      ledcWrite(0, 100);
+      ledcWrite(MOTOR_PWM_PIN, 100);
       pump_pwm = 100;
     }
     else if ((strcmp(RFDStringInputSpeicher, "110")) == 0) {
-      ledcWrite(0, 110);
+      ledcWrite(MOTOR_PWM_PIN, 110);
       pump_pwm = 110;
     }
     else if ((strcmp(RFDStringInputSpeicher, "120")) == 0) {
-      ledcWrite(0, 120);
+      ledcWrite(MOTOR_PWM_PIN, 120);
       pump_pwm = 120;
     }
     else if ((strcmp(RFDStringInputSpeicher, "130")) == 0) {
-      ledcWrite(0, 130);
+      ledcWrite(MOTOR_PWM_PIN, 130);
       pump_pwm = 130;
     }
     else if ((strcmp(RFDStringInputSpeicher, "140")) == 0) {
-      ledcWrite(0, 140);
+      ledcWrite(MOTOR_PWM_PIN, 140);
       pump_pwm = 140;
     }
     else if ((strcmp(RFDStringInputSpeicher, "150")) == 0) {
-      ledcWrite(0, 150);
+      ledcWrite(MOTOR_PWM_PIN, 150);
       pump_pwm = 150;
     }
     else if ((strcmp(RFDStringInputSpeicher, "160")) == 0) {
-      ledcWrite(0, 160);
+      ledcWrite(MOTOR_PWM_PIN, 160);
       pump_pwm = 160;
     }
     else if ((strcmp(RFDStringInputSpeicher, "170")) == 0) {
-      ledcWrite(0, 170);
+      ledcWrite(MOTOR_PWM_PIN, 170);
       pump_pwm = 170;
     }
     else if ((strcmp(RFDStringInputSpeicher, "180")) == 0) {
-      ledcWrite(0, 180);
+      ledcWrite(MOTOR_PWM_PIN, 180);
       pump_pwm = 180;
     }
     else if ((strcmp(RFDStringInputSpeicher, "190")) == 0) {
-      ledcWrite(0, 190);
+      ledcWrite(MOTOR_PWM_PIN, 190);
       pump_pwm = 190;
     }
     else if ((strcmp(RFDStringInputSpeicher, "200")) == 0) {
-      ledcWrite(0, 200);
+      ledcWrite(MOTOR_PWM_PIN, 200);
       pump_pwm = 200;
     }
     else if ((strcmp(RFDStringInputSpeicher, "210")) == 0) {
-      ledcWrite(0, 210);
+      ledcWrite(MOTOR_PWM_PIN, 210);
       pump_pwm = 210;
     }
     else if ((strcmp(RFDStringInputSpeicher, "220")) == 0) {
-      ledcWrite(0, 220);
+      ledcWrite(MOTOR_PWM_PIN, 220);
       pump_pwm = 220;
     }
     else if ((strcmp(RFDStringInputSpeicher, "230")) == 0) {
-      ledcWrite(0, 230);
+      ledcWrite(MOTOR_PWM_PIN, 230);
       pump_pwm = 230;
     }
     else if ((strcmp(RFDStringInputSpeicher, "240")) == 0) {
-      ledcWrite(0, 240);
+      ledcWrite(MOTOR_PWM_PIN, 240);
       pump_pwm = 240;
     }
     else if ((strcmp(RFDStringInputSpeicher, "250")) == 0) {
-      ledcWrite(0, 250);
+      ledcWrite(MOTOR_PWM_PIN, 250);
       pump_pwm = 250;
     }
   }
