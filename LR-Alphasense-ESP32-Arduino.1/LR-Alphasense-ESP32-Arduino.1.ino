@@ -9,6 +9,19 @@ const float SO2_VOLTAGE_SCALING = 1.49;  //  Scaling factor based on resistor di
 #include <Arduino.h>
 //#include <LITTLEFS.h>  //Old LOROL version of littleFS.  New one is included in Arduino ESP32 Core
 #include <LittleFS.h>
+volatile bool ppsTriggered = false;
+volatile bool captureNMEA = false;
+unsigned long previousMillis = 0; // Stores the last time the loop ran
+const long interval = 2000;       // Desired interval (1 second)
+const int ppsDelay = 0;          // Delay in milliseconds after PPS to read NMEA sentences
+char c;
+bool status_GPS_module = false;
+int GPS_timeout = 4000;
+// PPS interrupt service routine
+void IRAM_ATTR onPPS() {
+  ppsTriggered = true;
+  captureNMEA = true; // Set flag to capture NMEA
+}
 bool Status_File_System = false;
 bool initialize_littlefs_format_file_system() {
   if (!LittleFS.begin(false)) {
@@ -240,9 +253,7 @@ bool initialize_hdc_sensor() {
 HardwareSerial GPSSerial(2);
 #include <Adafruit_GPS.h>
 Adafruit_GPS GPS(&GPSSerial); // GPS object
-char c;
-bool status_GPS_module = false;
-int GPS_timeout = 4000;
+
 bool clearGPS() { // Delete previously acquired data from GPS
   int start_millis = millis();
   while (!GPS.newNMEAreceived()) {
@@ -332,6 +343,7 @@ unsigned int get_co2() {
 }
 int pump_pwm = 0;
 String filename = "/datalogger.txt";
+String last_NMEA = ""; // GPS last string
 void setup() {
   // put your setup code here, to run once:
   InitialiseSerial(115200);
@@ -351,6 +363,11 @@ void setup() {
   // PWM Pin implementation (pump)
   pinMode(MOTOR_PWM_PIN, OUTPUT);
   ledcAttach(MOTOR_PWM_PIN,200,8);
+
+  // Setup PPS interrupt
+  pinMode(4, INPUT_PULLUP); // PPS is connected to GPIO4
+  attachInterrupt(digitalPinToInterrupt(4), onPPS, RISING);
+
   Serial.println("Setup finished");
 }
 //Serial Terminal Interface Code
@@ -401,6 +418,42 @@ void processCommand(const char* input, Stream& output) {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  unsigned long currentMillis = millis();
+
+  
+  
+  // Collect sensor data if PPS or time interval
+  if (ppsTriggered || (currentMillis - previousMillis >= interval)) {
+    ppsTriggered = false; // Reset the flag if PPS triggered
+    previousMillis = currentMillis; // Update the last run time
+
+    // Capture NMEA sentence immediately after PPS
+  if (captureNMEA) {
+    captureNMEA = false; // Reset the flag
+    delay(ppsDelay); // Short delay to ensure NMEA sentence arrives
+
+    // Get data from GPS Module
+    clearGPS();
+    int start_millis = millis();
+    while (!GPS.newNMEAreceived()) {
+      c = GPS.read();
+      if (((millis() - start_millis) >= GPS_timeout) or (millis() < start_millis)) {
+        break;
+      }
+    }
+
+    if (GPS.newNMEAreceived()) {
+      GPS.parse(GPS.lastNMEA());
+      last_NMEA = GPS.lastNMEA();
+      //Serial.println(last_NMEA); // Print to Serial (or store as needed)
+    } else {
+      Serial.println("GPS not working!");
+      ESP_BT.println("GPS not working!");
+      SerialRFD.println("GPS not working!");
+      last_NMEA = "GPS not working!";
+    }
+  }
+
   String write_to_file_string = "";
   write_to_file_string += String(millis());
   write_to_file_string += ",";
@@ -488,29 +541,10 @@ if (readSerialTo(StringInputSpeicher)) {
   co2 = get_co2();
   write_to_file_string += String(co2);
   write_to_file_string += ",";
-  // Get data from GPS Module
-  clearGPS();
-  int start_millis = millis();
-  while (!GPS.newNMEAreceived()) {
-    c = GPS.read();
-    status_GPS_module = true;
-    if (((millis() - start_millis) >= GPS_timeout) or (millis() < start_millis)) {
-      status_GPS_module = false;
-      break;
-    }
-  }
-  if (status_GPS_module) {
-    GPS.parse(GPS.lastNMEA());
-    String last_NMEA = GPS.lastNMEA();
-    write_to_file_string += last_NMEA;
-  }
-  else {
-    status_GPS_module = initialize_GPS();
-    Serial.println("GPS not working!");
-    ESP_BT.println("GPS not working!");
-    SerialRFD.println("GPS not working!");
-    write_to_file_string += "GPS not working!\n";
-  }
+
+  // Add previously captured NMEA data
+  write_to_file_string += last_NMEA;
+  
   // Write data to internal storage
   if (Status_File_System) {
     write_string_to_file(filename, write_to_file_string);
@@ -525,5 +559,5 @@ if (readSerialTo(StringInputSpeicher)) {
   SerialRFD.print(write_to_file_string);
   Serial.print(write_to_file_string);
   ESP_BT.print(write_to_file_string);
-  delay(1000);
+}
 }
