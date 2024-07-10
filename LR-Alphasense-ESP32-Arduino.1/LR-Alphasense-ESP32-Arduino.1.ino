@@ -475,11 +475,13 @@ if (readSerialTo(StringInputSpeicher)) {
     Pressure = bme.readPressure();
     Pressure = Pressure / 100;
     Humidity = bme.readHumidity();
-    write_to_file_string += String(Temperature);
+    // Changed temp and humidity output to use the hdc sensor,
+    // the BME wasn't working well for humidity
+    write_to_file_string += String(hdcTemperature);
     write_to_file_string += ",";
     write_to_file_string += String(Pressure);
     write_to_file_string += ",";
-    write_to_file_string += String(Humidity);
+    write_to_file_string += String(hdcHumidity);
     write_to_file_string += ",";
   }
   else {
