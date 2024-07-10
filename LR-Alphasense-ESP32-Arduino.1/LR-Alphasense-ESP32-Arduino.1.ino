@@ -78,7 +78,7 @@ char StringInputSpeicher[500];
 void InitialiseSerial(int BaudRate) {
   Serial.begin(BaudRate); // Start serial monitor at 115200 (ESP32)
   delay(500);
-  Serial.println("Serial connection established.");
+  Serial.println("BOOTUP - Serial connection established.");
   if (readSerialTo(StringInputSpeicher)) {
     Serial.println("Old data that was stored in buffer:");
     Serial.println(StringInputSpeicher);
@@ -353,439 +353,68 @@ void setup() {
   ledcAttach(MOTOR_PWM_PIN,200,8);
   Serial.println("Setup finished");
 }
+//Serial Terminal Interface Code
+void processCommand(const char* input, Stream& output) {
+  output.println("Serial input received!");
+  output.println(input);
+
+  if (strcmp(input, "help") == 0) {
+    output.print("Print Datalogging file to serial terminal: ");
+    output.println("'print data'");
+    output.print("Delete Datalogging file: ");
+    output.println("'delete data'");
+    output.print("Switch pump on: ");
+    output.println("'pump_on'");
+    output.print("Switch pump off: ");
+    output.println("'pump_off'");
+    for (int i = 0; i <= 30; i += 10) {
+      output.print("Switch pump ");
+      output.print(i);
+      output.println("/250: ");
+    }
+    output.println("...");
+    output.println();
+  } else if (strcmp(input, "print data") == 0) {
+    read_file_and_print_to_serial(filename);
+  } else if (strcmp(input, "delete data") == 0) {
+    delete_file(filename);
+  } else if (strcmp(input, "pump_on") == 0) {
+    digitalWrite(MOTOR_PWM_PIN, HIGH);
+    ledcWrite(MOTOR_PWM_PIN, 254);
+    pump_pwm = 254;
+  } else if (strcmp(input, "pump_off") == 0) {
+    digitalWrite(MOTOR_PWM_PIN, LOW);
+    ledcWrite(MOTOR_PWM_PIN, 0);
+    pump_pwm = 0;
+  } else {
+    for (int i = 0; i <= 250; i += 10) {
+      char cmd[4];
+      sprintf(cmd, "%d", i);
+      if (strcmp(input, cmd) == 0) {
+        ledcWrite(MOTOR_PWM_PIN, i);
+        pump_pwm = i;
+        break;
+      }
+    }
+  }
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
   String write_to_file_string = "";
   write_to_file_string += String(millis());
   write_to_file_string += ",";
-  // Try to read serial input and execute command
-  if (readSerialTo(StringInputSpeicher)) {
-    Serial.println("Serial input recieved!");
-    Serial.println(StringInputSpeicher);
-    if ((strcmp(StringInputSpeicher, "help")) == 0) {
-      Serial.print("Print Datalogging file to serial terminal: ");
-      Serial.println("'print data'");
-      Serial.print("Delete Datalogging file: ");
-      Serial.println("'delete data'");
-      Serial.print("Switch pump on: ");
-      Serial.println("'pump_on'");
-      Serial.print("Switch pump off: ");
-      Serial.println("'pump_off'");
-      Serial.print("Switch pump 10/255: ");
-      Serial.println("'10'");
-      Serial.print("Switch pump 20/255: ");
-      Serial.println("'20'");
-      Serial.print("Switch pump 30/255: ");
-      Serial.println("'30'");
-      Serial.println("...");
-      Serial.println();
-    }
-    else if ((strcmp(StringInputSpeicher, "print data")) == 0) {
-      read_file_and_print_to_serial(filename);
-    }
-    else if ((strcmp(StringInputSpeicher, "delete data")) == 0) {
-      delete_file(filename);
-    }
-    else if ((strcmp(StringInputSpeicher, "pump_on")) == 0) {
-      digitalWrite(MOTOR_PWM_PIN, HIGH);
-      ledcWrite(MOTOR_PWM_PIN, 254);
-      pump_pwm = 254;
-    }
-    else if ((strcmp(StringInputSpeicher, "pump_off")) == 0) {
-      digitalWrite(MOTOR_PWM_PIN, LOW);
-      ledcWrite(MOTOR_PWM_PIN, 0);
-      pump_pwm = 0;
-    }
-    else if ((strcmp(StringInputSpeicher, "0")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 0);
-      pump_pwm = 0;
-    }
-    else if ((strcmp(StringInputSpeicher, "10")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 10);
-      pump_pwm = 10;
-    }
-    else if ((strcmp(StringInputSpeicher, "20")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 20);
-      pump_pwm = 20;
-    }
-    else if ((strcmp(StringInputSpeicher, "30")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 30);
-      pump_pwm = 30;
-    }
-    else if ((strcmp(StringInputSpeicher, "40")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 40);
-      pump_pwm = 40;
-    }
-    else if ((strcmp(StringInputSpeicher, "50")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 50);
-      pump_pwm = 50;
-    }
-    else if ((strcmp(StringInputSpeicher, "60")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 60);
-      pump_pwm = 60;
-    }
-    else if ((strcmp(StringInputSpeicher, "70")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 70);
-      pump_pwm = 70;
-    }
-    else if ((strcmp(StringInputSpeicher, "80")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 80);
-      pump_pwm = 80;
-    }
-    else if ((strcmp(StringInputSpeicher, "90")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 90);
-      pump_pwm = 90;
-    }
-    else if ((strcmp(StringInputSpeicher, "100")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 100);
-      pump_pwm = 100;
-    }
-    else if ((strcmp(StringInputSpeicher, "110")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 110);
-      pump_pwm = 110;
-    }
-    else if ((strcmp(StringInputSpeicher, "120")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 120);
-      pump_pwm = 120;
-    }
-    else if ((strcmp(StringInputSpeicher, "130")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 130);
-      pump_pwm = 130;
-    }
-    else if ((strcmp(StringInputSpeicher, "140")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 140);
-      pump_pwm = 140;
-    }
-    else if ((strcmp(StringInputSpeicher, "150")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 150);
-      pump_pwm = 150;
-    }
-    else if ((strcmp(StringInputSpeicher, "160")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 160);
-      pump_pwm = 160;
-    }
-    else if ((strcmp(StringInputSpeicher, "170")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 170);
-      pump_pwm = 170;
-    }
-    else if ((strcmp(StringInputSpeicher, "180")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 180);
-      pump_pwm = 180;
-    }
-    else if ((strcmp(StringInputSpeicher, "190")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 190);
-      pump_pwm = 190;
-    }
-    else if ((strcmp(StringInputSpeicher, "200")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 200);
-      pump_pwm = 200;
-    }
-    else if ((strcmp(StringInputSpeicher, "210")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 210);
-      pump_pwm = 210;
-    }
-    else if ((strcmp(StringInputSpeicher, "220")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 220);
-      pump_pwm = 220;
-    }
-    else if ((strcmp(StringInputSpeicher, "230")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 230);
-      pump_pwm = 230;
-    }
-    else if ((strcmp(StringInputSpeicher, "240")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 240);
-      pump_pwm = 240;
-    }
-    else if ((strcmp(StringInputSpeicher, "250")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 250);
-      pump_pwm = 250;
-    }
+// Try to read serial input and execute command
+if (readSerialTo(StringInputSpeicher)) {
+    processCommand(StringInputSpeicher, Serial);
   }
+
   if (readBTSerialTo(BluetoothInputSpeicher)) {
-    ESP_BT.println("Serial input recieved!");
-    ESP_BT.println(BluetoothInputSpeicher);
-    if ((strcmp(BluetoothInputSpeicher, "help")) == 0) {
-      ESP_BT.print("Print Datalogging file to serial terminal: ");
-      ESP_BT.println("'print data'");
-      ESP_BT.print("Delete Datalogging file: ");
-      ESP_BT.println("'delete data'");
-      ESP_BT.print("Switch pump on: ");
-      ESP_BT.println("'pump_on'");
-      ESP_BT.print("Switch pump off: ");
-      ESP_BT.println("'pump_off'");
-      ESP_BT.print("Switch pump 10/255: ");
-      ESP_BT.println("'10'");
-      ESP_BT.print("Switch pump 20/255: ");
-      ESP_BT.println("'20'");
-      ESP_BT.print("Switch pump 30/255: ");
-      ESP_BT.println("'30'");
-      ESP_BT.println("...");
-      ESP_BT.println();
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "print data")) == 0) {
-      read_file_and_print_to_serial(filename);
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "delete data")) == 0) {
-      delete_file(filename);
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "pump_on")) == 0) {
-      digitalWrite(26, HIGH);
-      ledcWrite(MOTOR_PWM_PIN, 254);
-      pump_pwm = 254;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "pump_off")) == 0) {
-      digitalWrite(26, LOW);
-      ledcWrite(MOTOR_PWM_PIN, 0);
-      pump_pwm = 0;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "0")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 0);
-      pump_pwm = 0;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "10")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 10);
-      pump_pwm = 10;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "20")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 20);
-      pump_pwm = 20;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "30")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 30);
-      pump_pwm = 30;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "40")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 40);
-      pump_pwm = 40;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "50")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 50);
-      pump_pwm = 50;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "60")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 60);
-      pump_pwm = 60;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "70")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 70);
-      pump_pwm = 70;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "80")) == 0) {
-      // Try to read Bluetooth serial input and execute command
-      ledcWrite(MOTOR_PWM_PIN, 80);
-      pump_pwm = 80;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "90")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 90);
-      pump_pwm = 90;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "100")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 100);
-      pump_pwm = 100;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "110")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 110);
-      pump_pwm = 110;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "120")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 120);
-      pump_pwm = 120;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "130")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 130);
-      pump_pwm = 130;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "140")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 140);
-      pump_pwm = 140;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "150")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 150);
-      pump_pwm = 150;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "160")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 160);
-      pump_pwm = 160;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "170")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 170);
-      pump_pwm = 170;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "180")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 180);
-      pump_pwm = 180;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "190")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 190);
-      pump_pwm = 190;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "200")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 200);
-      pump_pwm = 200;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "210")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 210);
-      pump_pwm = 210;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "220")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 220);
-      pump_pwm = 220;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "230")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 230);
-      pump_pwm = 230;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "240")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 240);
-      pump_pwm = 240;
-    }
-    else if ((strcmp(BluetoothInputSpeicher, "250")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 250);
-      pump_pwm = 250;
-    }
+    processCommand(BluetoothInputSpeicher, ESP_BT);
   }
-  // Try to read RFD serial input and execute command
+
   if (readSerialRFDTo(RFDStringInputSpeicher)) {
-    SerialRFD.println("Serial input recieved!");
-    SerialRFD.println(RFDStringInputSpeicher);
-    if ((strcmp(RFDStringInputSpeicher, "help")) == 0) {
-      SerialRFD.print("Print Datalogging file to serial terminal: ");
-      SerialRFD.println("'print data'");
-      SerialRFD.print("Delete Datalogging file: ");
-      SerialRFD.println("'delete data'");
-      SerialRFD.print("Switch pump on: ");
-      SerialRFD.println("'pump_on'");
-      SerialRFD.print("Switch pump off: ");
-      SerialRFD.println("'pump_off'");
-      SerialRFD.print("Switch pump 10/255: ");
-      SerialRFD.println("'10'");
-      SerialRFD.print("Switch pump 20/255: ");
-      SerialRFD.println("'20'");
-      SerialRFD.print("Switch pump 30/255: ");
-      SerialRFD.println("'30'");
-      SerialRFD.println("...");
-      SerialRFD.println();
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "print data")) == 0) {
-      read_file_and_print_to_serial(filename);
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "delete data")) == 0) {
-      delete_file(filename);
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "pump_on")) == 0) {
-      digitalWrite(26, HIGH);
-      ledcWrite(MOTOR_PWM_PIN, 254);
-      pump_pwm = 254;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "pump_off")) == 0) {
-      digitalWrite(26, LOW);
-      ledcWrite(MOTOR_PWM_PIN, 0);
-      pump_pwm = 0;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "0")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 0);
-      pump_pwm = 0;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "10")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 10);
-      pump_pwm = 10;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "20")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 20);
-      pump_pwm = 20;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "30")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 30);
-      pump_pwm = 30;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "40")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 40);
-      pump_pwm = 40;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "50")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 50);
-      pump_pwm = 50;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "60")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 60);
-      pump_pwm = 60;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "70")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 70);
-      pump_pwm = 70;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "80")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 80);
-      pump_pwm = 80;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "90")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 90);
-      pump_pwm = 90;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "100")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 100);
-      pump_pwm = 100;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "110")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 110);
-      pump_pwm = 110;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "120")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 120);
-      pump_pwm = 120;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "130")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 130);
-      pump_pwm = 130;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "140")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 140);
-      pump_pwm = 140;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "150")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 150);
-      pump_pwm = 150;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "160")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 160);
-      pump_pwm = 160;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "170")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 170);
-      pump_pwm = 170;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "180")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 180);
-      pump_pwm = 180;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "190")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 190);
-      pump_pwm = 190;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "200")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 200);
-      pump_pwm = 200;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "210")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 210);
-      pump_pwm = 210;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "220")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 220);
-      pump_pwm = 220;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "230")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 230);
-      pump_pwm = 230;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "240")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 240);
-      pump_pwm = 240;
-    }
-    else if ((strcmp(RFDStringInputSpeicher, "250")) == 0) {
-      ledcWrite(MOTOR_PWM_PIN, 250);
-      pump_pwm = 250;
-    }
+    processCommand(RFDStringInputSpeicher, SerialRFD);
   }
   // Get data from BME Sensor
   if (StatusBMESensor) {
