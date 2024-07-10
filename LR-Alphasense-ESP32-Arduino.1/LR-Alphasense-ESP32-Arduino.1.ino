@@ -2,7 +2,9 @@
 #define SO2_ANALOG_PIN 39 // old 26
 #define BATT_ANALOG_PIN 35 // old NC 34
 #define MOTOR_PWM_PIN 19
-const float BATT_VOLTAGE_SCALING = 8.73; // scaling factor for voltage divider
+const float BATT_VOLTAGE_SCALING = 7.49; // scaling factor for voltage divider
+const float SO2_VOLTAGE_SCALING = 1.49;  //  Scaling factor based on resistor divider
+#include "adc_lookup_table.h" // Custom generated lookup tables per ESP32 chip to compensate for non-linear ADC
 // LittleFS initialization
 #include <Arduino.h>
 //#include <LITTLEFS.h>  //Old LOROL version of littleFS.  New one is included in Arduino ESP32 Core
@@ -171,7 +173,7 @@ bool readSerialRFDTo(char serialSpeicher[]) {
 float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit_adc, float
                            max_voltage) {
   float si_voltage = 0;
-  long long voltage = 0;
+  long long voltage_sum = 0;
   if (anzahl_spannungs_messung >= 300000) {
     anzahl_spannungs_messung = 300000;
   }
@@ -180,11 +182,15 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
   }
   delay(3);
   for (int i = 0; i < anzahl_spannungs_messung; i++) {
-    voltage = voltage + analogRead(volt_pin);
+    voltage_sum += analogRead(volt_pin);
   }
   int total_adc_res = int(pow(2, x_bit_adc));
-  si_voltage = float(voltage) / float(anzahl_spannungs_messung);
-  si_voltage = (si_voltage * max_voltage) / total_adc_res;
+  float avg_adc_value = float(voltage_sum) / float(anzahl_spannungs_messung);
+
+  //ADC LUT correction here
+  float corrected_adc_value = ADC_LUT[int(avg_adc_value)];
+  
+  si_voltage = (corrected_adc_value * max_voltage) / total_adc_res;
   return si_voltage;
 }
 // BME implementation
@@ -823,12 +829,13 @@ void loop() {
   }
   // SO2
   float SI_voltage_pin_SO2 = readSIVoltageFromPin(SO2_ANALOG_PIN, 10, 12, 3.3);
+  float actual_SO2_voltage = SI_voltage_pin_SO2 * SO2_VOLTAGE_SCALING;
   if (SI_voltage_pin_SO2 >= 3.7) {
-    Serial.print("Problem with ADC on Pin SO2; measured voltage=");
+    Serial.print("Problem with ADC on Pin SO2; ADC voltage=");
     Serial.println(SI_voltage_pin_SO2);
-    ESP_BT.print("Problem with ADC on Pin SO2; measured voltage=");
+    ESP_BT.print("Problem with ADC on Pin SO2; ADC voltage=");
     ESP_BT.println(SI_voltage_pin_SO2);
-    SerialRFD.print("Problem with ADC on Pin SO2; measured voltage=");
+    SerialRFD.print("Problem with ADC on Pin SO2; ADC voltage=");
     SerialRFD.println(SI_voltage_pin_SO2);
   }
   // Battery voltage
@@ -844,7 +851,7 @@ void loop() {
   }
   write_to_file_string += String(SI_voltage_pin_FLOW, 4);
   write_to_file_string += ",";
-  write_to_file_string += String(SI_voltage_pin_SO2, 4);
+  write_to_file_string += String(actual_SO2_voltage, 4);
   write_to_file_string += ",";
   write_to_file_string += String(actual_batt_voltage, 4);
   write_to_file_string += ",";
