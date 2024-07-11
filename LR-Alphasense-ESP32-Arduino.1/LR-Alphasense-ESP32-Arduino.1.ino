@@ -126,7 +126,7 @@ bool readBTSerialTo(char BTInputBuffer[]) {
   static byte BTindex;
   while (ESP_BT.available()) {
     char BTc = ESP_BT.read();
-    if (BTc == '\n' && BTindex > 0) {
+    if ((BTc == '\n' || BTc == '\r') && BTindex > 0) {
       BTserialBuffer[BTindex] = '\0';
       BTindex = 0;
       strcpy(BTInputBuffer, BTserialBuffer);
@@ -463,6 +463,9 @@ if (readSerialTo(StringInputSpeicher)) {
   }
 
   if (readBTSerialTo(BluetoothInputSpeicher)) {
+      Serial.println("Bluetooth Input detected.");  // Debug print
+      Serial.print("Bluetooth Input: ");
+      Serial.println(BluetoothInputSpeicher);
     processCommand(BluetoothInputSpeicher, ESP_BT);
   }
 
