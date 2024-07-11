@@ -392,9 +392,18 @@ void processCommand(const char* input, Stream& output) {
     output.println("...");
     output.println();
   } else if (strcmp(input, "print data") == 0) {
+    Serial.println("Printing data...");
+    ESP_BT.println("Printing data...");
+    SerialRFD.println("Printing data...");
     read_file_and_print_to_serial(filename);
+    Serial.println("Data print complete.");
+    ESP_BT.println("Data print complete.");
+    SerialRFD.println("Data print complete.");
   } else if (strcmp(input, "delete data") == 0) {
     delete_file(filename);
+    Serial.println("Data file deleted.");
+    ESP_BT.println("Data file deleted.");
+    SerialRFD.println("Data file deleted.");
   } else if (strcmp(input, "pump_on") == 0) {
     digitalWrite(MOTOR_PWM_PIN, HIGH);
     ledcWrite(MOTOR_PWM_PIN, 254);
