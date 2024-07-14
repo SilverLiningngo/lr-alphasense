@@ -430,7 +430,7 @@ void loop() {
   unsigned long currentMillis = millis();
 
   
-  
+  last_NMEA = "\n";
   // Collect sensor data if PPS or time interval
   if (ppsTriggered || (currentMillis - previousMillis >= interval)) {
     ppsTriggered = false; // Reset the flag if PPS triggered
