@@ -1,28 +1,73 @@
-#define FLOW_ANALOG_PIN 36 // old 12
-#define SO2_ANALOG_PIN 39 // old 26
-#define BATT_ANALOG_PIN 35 // old NC 34
-#define MOTOR_PWM_PIN 19
+// Include libraries
+#include <Arduino.h>
+#include <LittleFS.h>
+#include "adc_lookup_table.h" // Custom generated lookup tables per ESP32 chip to compensate for non-linear ADC
+#include "BluetoothSerial.h"
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
+#include <HDC2080.h>
+#include <HardwareSerial.h>
+#include "s300i2c.h"
+#include <Adafruit_GPS.h>
+
+//Pin definitions
+#define FLOW_ANALOG_PIN 36 // Not used
+#define SO2_ANALOG_PIN 39 // SO2 voltage sense, 7.49:1 divider
+#define BATT_ANALOG_PIN 35 // Battery voltage sense 
+#define MOTOR_PWM_PIN 19 // Pump power control
+
+//Constants
 const float BATT_VOLTAGE_SCALING = 7.49; // scaling factor for voltage divider
 const float SO2_VOLTAGE_SCALING = 1.49;  //  Scaling factor based on resistor divider
-#include "adc_lookup_table.h" // Custom generated lookup tables per ESP32 chip to compensate for non-linear ADC
-// LittleFS initialization
-#include <Arduino.h>
-//#include <LITTLEFS.h>  //Old LOROL version of littleFS.  New one is included in Arduino ESP32 Core
-#include <LittleFS.h>
+const long interval = 2000;       // Desired interval (1 second)
+const int ppsDelay = 0;          // Delay in milliseconds after PPS to read NMEA sentences
+const int GPS_timeout = 4000;
+
+//Variables
 volatile bool ppsTriggered = false;
 volatile bool captureNMEA = false;
 unsigned long previousMillis = 0; // Stores the last time the loop ran
-const long interval = 2000;       // Desired interval (1 second)
-const int ppsDelay = 0;          // Delay in milliseconds after PPS to read NMEA sentences
 char c;
 bool status_GPS_module = false;
-int GPS_timeout = 4000;
+bool Status_File_System = false;
+bool status_s300 = false;
+bool StatusBMESensor = false;
+bool StatusHDCSensor = false;
+bool BTSwitchedOn = false;
+unsigned int co2 = 0;
+float Temperature = 0;
+float Pressure = 0;
+float Humidity = 0;
+int pump_pwm = 0;
+String filename = "/datalogger.txt";
+String last_NMEA = ""; // GPS last string
+
+// Serial input buffers
+char StringInputSpeicher[500];
+char BluetoothInputSpeicher[500];
+char RFDStringInputSpeicher[500];
+
+BluetoothSerial ESP_BT; //Bluetooth serial object
+HardwareSerial SerialRFD(1); // Hardware serial for RFD
+
+HardwareSerial GPSSerial(2); // Hardware serial for GPS
+Adafruit_GPS GPS(&GPSSerial); // GPS serial object
+
+Adafruit_BME280 bme; // BME object
+HDC2080 hdc(0x40); //HDC2080 Sensor Object
+S300I2C s3(Wire); // S300 object
+
+
+
 // PPS interrupt service routine
 void IRAM_ATTR onPPS() {
   ppsTriggered = true;
   captureNMEA = true; // Set flag to capture NMEA
 }
-bool Status_File_System = false;
+
+//LittleFS Filesystem
 bool initialize_littlefs_format_file_system() {
   if (!LittleFS.begin(false)) {
     Serial.println("LittleFS mount failed");
@@ -86,8 +131,8 @@ bool delete_file(String filename) {
   }
   return false;
 }
-// Serial communication implementation
-char StringInputSpeicher[500];
+
+// Serial communication
 void InitialiseSerial(int BaudRate) {
   Serial.begin(BaudRate); // Start serial monitor at 115200 (ESP32)
   delay(500);
@@ -115,11 +160,8 @@ bool readSerialTo(char serialSpeicher[]) {
   }
   return false;
 }
+
 // Bluetooth Serial communication implementation
-#include "BluetoothSerial.h"
-bool BTSwitchedOn = false;
-BluetoothSerial ESP_BT; //Object for Bluetooth
-char BluetoothInputSpeicher[500];
 bool readBTSerialTo(char BTInputBuffer[]) {
   const int BTSERIAL_BUFFER_SIZE = 500;
   static char BTserialBuffer[BTSERIAL_BUFFER_SIZE];
@@ -150,10 +192,8 @@ void InitialiseBluetooth() {
   }
   BTSwitchedOn = true;
 }
-// RFD communication implementation
-#include <HardwareSerial.h>
-HardwareSerial SerialRFD(1); // Hardware serial object = RFD object
-char RFDStringInputSpeicher[500];
+
+//RFD UHF Radio communicaiton implementation
 void InitialiseRFDSerial() {
   SerialRFD.begin(57600, SERIAL_8N1, 13, 14);
   if (SerialRFD) {
@@ -182,6 +222,7 @@ bool readSerialRFDTo(char serialSpeicher[]) {
   }
   return false;
 }
+
 // read a SI voltage from a pin
 float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit_adc, float
                            max_voltage) {
@@ -206,18 +247,7 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
   si_voltage = (corrected_adc_value * max_voltage) / total_adc_res;
   return si_voltage;
 }
-// BME implementation
-// BME communication via I2C Pins
-#include <Wire.h>
-#include <SPI.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-Adafruit_BME280 bme; // BME object
-float Temperature = 0;
-float Pressure = 0;
-float Humidity = 0;
-bool StatusBMESensor = false;
-bool StatusHDCSensor = false;
+// BME280 Temp, Pressure, Humidity Sensor implementation
 bool initialize_bme_sensor() {
   StatusBMESensor = bme.begin(0x76);
   if (!StatusBMESensor) {
@@ -229,9 +259,8 @@ bool initialize_bme_sensor() {
   StatusBMESensor = true;
   return true;
 }
+
 // HDC2080 Humidity Sensor Implementation
-#include <HDC2080.h>
-HDC2080 hdc(0x40); //HDC2080 Sensor Object
 float hdcHumidity = 0;
 float hdcTemperature = 0;
 bool initialize_hdc_sensor() {
@@ -247,13 +276,8 @@ bool initialize_hdc_sensor() {
   Serial.println("HDC Humidity Sensor Initialized");
   return true;
 }
-// GPS implementation
-// Communication via serial connection
-#include <HardwareSerial.h>
-HardwareSerial GPSSerial(2);
-#include <Adafruit_GPS.h>
-Adafruit_GPS GPS(&GPSSerial); // GPS object
 
+// GPS implementation
 bool clearGPS() { // Delete previously acquired data from GPS
   int start_millis = millis();
   while (!GPS.newNMEAreceived()) {
@@ -304,12 +328,8 @@ bool initialize_GPS() { // Setup of GPS Module
   }
   return true;
 }
-// S300 Sensor
-unsigned int co2 = 0;
-#include "s300i2c.h"
-#include <Wire.h>
-S300I2C s3(Wire); // S300 object
-bool status_s300 = false;
+
+// S300 CO2 Sensor
 bool check_sensor_presence(uint8_t address) {
   Wire.beginTransmission(address);
   if (Wire.endTransmission() == 0) {
@@ -341,38 +361,10 @@ unsigned int get_co2() {
   }
   return co2temporary;
 }
-int pump_pwm = 0;
-String filename = "/datalogger.txt";
-String last_NMEA = ""; // GPS last string
-void setup() {
-  // put your setup code here, to run once:
-  InitialiseSerial(115200);
-  InitialiseRFDSerial();
-  InitialiseBluetooth();
-  pinMode(FLOW_ANALOG_PIN, INPUT);
-  pinMode(SO2_ANALOG_PIN, INPUT);
-  pinMode(BATT_ANALOG_PIN, INPUT);
-  Status_File_System = initialize_littlefs_format_file_system();
-  if (Status_File_System) {
-    Serial.println("File system initialized");
-  }
-  StatusBMESensor = initialize_bme_sensor();
-  StatusHDCSensor = initialize_hdc_sensor();
-  status_GPS_module = initialize_GPS();
-  status_s300 = initialize_s300();
-  // PWM Pin implementation (pump)
-  pinMode(MOTOR_PWM_PIN, OUTPUT);
-  ledcAttach(MOTOR_PWM_PIN,200,8);
 
-  // Setup PPS interrupt
-  pinMode(4, INPUT_PULLUP); // PPS is connected to GPIO4
-  attachInterrupt(digitalPinToInterrupt(4), onPPS, RISING);
-
-  Serial.println("Setup finished");
-}
-//Serial Terminal Interface Code
+//Serial Terminal Menu Code
 void processCommand(const char* input, Stream& output) {
-  output.println("Serial input received!");
+  output.print:("Serial input: ");
   output.println(input);
 
   if (strcmp(input, "help") == 0) {
@@ -425,10 +417,34 @@ void processCommand(const char* input, Stream& output) {
   }
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-  unsigned long currentMillis = millis();
+void setup() {
+  InitialiseSerial(115200);
+  InitialiseRFDSerial();
+  InitialiseBluetooth();
+  pinMode(FLOW_ANALOG_PIN, INPUT);
+  pinMode(SO2_ANALOG_PIN, INPUT);
+  pinMode(BATT_ANALOG_PIN, INPUT);
+  Status_File_System = initialize_littlefs_format_file_system();
+  if (Status_File_System) {
+    Serial.println("File system initialized");
+  }
+  StatusBMESensor = initialize_bme_sensor();
+  StatusHDCSensor = initialize_hdc_sensor();
+  status_GPS_module = initialize_GPS();
+  status_s300 = initialize_s300();
+  // PWM Pin implementation (pump)
+  pinMode(MOTOR_PWM_PIN, OUTPUT);
+  ledcAttach(MOTOR_PWM_PIN,200,8);
 
+  // Setup PPS interrupt
+  pinMode(4, INPUT_PULLUP); // PPS is connected to GPIO4
+  attachInterrupt(digitalPinToInterrupt(4), onPPS, RISING);
+
+  Serial.println("Setup finished");
+}
+
+void loop() {
+  unsigned long currentMillis = millis();
   
   last_NMEA = "\n";
   // Collect sensor data if PPS or time interval
@@ -466,8 +482,9 @@ void loop() {
   String write_to_file_string = "";
   write_to_file_string += String(millis());
   write_to_file_string += ",";
-// Try to read serial input and execute command
-if (readSerialTo(StringInputSpeicher)) {
+  
+  // Try to read serial input and execute command
+  if (readSerialTo(StringInputSpeicher)) {
     processCommand(StringInputSpeicher, Serial);
   }
 
@@ -481,6 +498,7 @@ if (readSerialTo(StringInputSpeicher)) {
   if (readSerialRFDTo(RFDStringInputSpeicher)) {
     processCommand(RFDStringInputSpeicher, SerialRFD);
   }
+  
   // Get data from BME Sensor
   if (StatusBMESensor) {
     Temperature = bme.readTemperature();
@@ -506,8 +524,6 @@ if (readSerialTo(StringInputSpeicher)) {
   if (StatusHDCSensor) {
     hdcHumidity = hdc.readHumidity();
     hdcTemperature = hdc.readTemp();
-    //Serial.print("HDC Sensor Temp (C): "); Serial.print(hdcTemperature);
-    //Serial.print(", RH:"); Serial.println(hdcHumidity);
   }
   else {
     Serial.println("No HDC sensor available!!");
@@ -534,7 +550,7 @@ if (readSerialTo(StringInputSpeicher)) {
     SerialRFD.print("Problem with ADC on Pin SO2; ADC voltage=");
     SerialRFD.println(SI_voltage_pin_SO2);
   }
-  // Battery voltage
+  // Battery
   float SI_voltage_pin_BATT = readSIVoltageFromPin(BATT_ANALOG_PIN, 10, 12, 3.3);
   float actual_batt_voltage = SI_voltage_pin_BATT * BATT_VOLTAGE_SCALING;
   if (SI_voltage_pin_BATT >= 3.7) {
@@ -551,6 +567,7 @@ if (readSerialTo(StringInputSpeicher)) {
   write_to_file_string += ",";
   write_to_file_string += String(actual_batt_voltage, 4);
   write_to_file_string += ",";
+  
   // Get data from CO2 Sensor
   co2 = get_co2();
   write_to_file_string += String(co2);
