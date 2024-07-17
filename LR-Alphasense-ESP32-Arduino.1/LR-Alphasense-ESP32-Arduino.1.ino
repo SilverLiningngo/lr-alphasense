@@ -37,10 +37,12 @@ bool StatusBMESensor = false;
 bool StatusHDCSensor = false;
 bool BTSwitchedOn = false;
 unsigned int co2 = 0;
-float Temperature = 0;
-float Pressure = 0;
-float Humidity = 0;
 int pump_pwm = 0;
+float bmeTemperature;
+float bmePressure;
+float bmeHumidity;
+float hdcHumidity = 0;
+float hdcTemperature = 0;
 String filename = "/datalogger.txt";
 String last_NMEA = ""; // GPS last string
 
@@ -66,7 +68,7 @@ void IRAM_ATTR onPPS() {
   ppsTriggered = true;
   captureNMEA = true; // Set flag to capture NMEA
 }
-
+ 
 //LittleFS Filesystem
 bool initialize_littlefs_format_file_system() {
   if (!LittleFS.begin(false)) {
@@ -261,8 +263,6 @@ bool initialize_bme_sensor() {
 }
 
 // HDC2080 Humidity Sensor Implementation
-float hdcHumidity = 0;
-float hdcTemperature = 0;
 bool initialize_hdc_sensor() {
   hdc.begin();
   hdc.reset();
@@ -364,7 +364,7 @@ unsigned int get_co2() {
 
 //Serial Terminal Menu Code
 void processCommand(const char* input, Stream& output) {
-  output.print:("Serial input: ");
+  output.print("Serial input: ");
   output.println(input);
 
   if (strcmp(input, "help") == 0) {
@@ -479,10 +479,6 @@ void loop() {
     }
   }
 
-  String write_to_file_string = "";
-  write_to_file_string += String(millis());
-  write_to_file_string += ",";
-  
   // Try to read serial input and execute command
   if (readSerialTo(StringInputSpeicher)) {
     processCommand(StringInputSpeicher, Serial);
@@ -499,33 +495,33 @@ void loop() {
     processCommand(RFDStringInputSpeicher, SerialRFD);
   }
   
+  // Log the time that sensor sampling starts
+  sampleStartMillis = millis(); 
   // Get data from BME Sensor
   if (StatusBMESensor) {
-    Temperature = bme.readTemperature();
-    Pressure = bme.readPressure();
-    Pressure = Pressure / 100;
-    Humidity = bme.readHumidity();
-    // Changed temp and humidity output to use the hdc sensor,
-    // the BME wasn't working well for humidity
-    write_to_file_string += String(hdcTemperature);
-    write_to_file_string += ",";
-    write_to_file_string += String(Pressure);
-    write_to_file_string += ",";
-    write_to_file_string += String(hdcHumidity);
-    write_to_file_string += ",";
+    bmeTemperature = bme.readTemperature();
+    bmePressure = bme.readPressure();
+    bmePressure = bmePressure / 100;
+    bmeHumidity = bme.readHumidity();
   }
   else {
+    bmeTemperature = 0;
+    bmePressure = 0;
+    bmeHumidity = 0;
     Serial.println("No BME sensor available!!");
     ESP_BT.println("No BME sensor available!!");
     SerialRFD.println("No BME sensor available!!");
     StatusBMESensor = initialize_bme_sensor();
     write_to_file_string += "No BME Sensor available,,,";
   }
+  
   if (StatusHDCSensor) {
     hdcHumidity = hdc.readHumidity();
     hdcTemperature = hdc.readTemp();
   }
   else {
+    hdcHumidity = 0;
+    hdcTemperature = 0;
     Serial.println("No HDC sensor available!!");
   }
   // Get analog voltages from pins
@@ -561,15 +557,24 @@ void loop() {
     SerialRFD.print("Problem with ADC on Pin BATT; ADC voltage=");
     SerialRFD.println(SI_voltage_pin_BATT);
   }
+  
+  // Get data from CO2 Sensor
+  co2 = get_co2();
+
+  write_to_file_string += String(sampleStartMillis);
+  write_to_file_string += ",";
+  write_to_file_string += String(hdcTemperature);
+  write_to_file_string += ",";
+  write_to_file_string += String(bmePressure);
+  write_to_file_string += ",";
+  write_to_file_string += String(hdcHumidity);
+  write_to_file_string += ",";
   write_to_file_string += String(SI_voltage_pin_FLOW, 4);
   write_to_file_string += ",";
   write_to_file_string += String(actual_SO2_voltage, 4);
   write_to_file_string += ",";
   write_to_file_string += String(actual_batt_voltage, 4);
   write_to_file_string += ",";
-  
-  // Get data from CO2 Sensor
-  co2 = get_co2();
   write_to_file_string += String(co2);
   write_to_file_string += ",";
 
