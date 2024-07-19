@@ -17,6 +17,7 @@
 #define SO2_ANALOG_PIN 39 // SO2 voltage sense, 7.49:1 divider
 #define BATT_ANALOG_PIN 35 // Battery voltage sense 
 #define MOTOR_PWM_PIN 19 // Pump power control
+#define GPS_PPS_PIN 4 // GPS PPS line (Pulse Per Second)
 
 //Constants
 const float BATT_VOLTAGE_SCALING = 7.49; // scaling factor for voltage divider
@@ -429,13 +430,17 @@ void processCommand(const char* input, Stream& output) {
 }
 
 void setup() {
+  pinMode(FLOW_ANALOG_PIN, INPUT);
+  pinMode(SO2_ANALOG_PIN, INPUT);
+  pinMode(BATT_ANALOG_PIN, INPUT);
+  pinMode(MOTOR_PWM_PIN, OUTPUT);
+  pinMode(GPS_PPS_PIN, INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH); // Indicate booting setup
   macAddress = ESP.getEfuseMac(); // Get the ESP32 Chip MAC address, 6 bytes
   InitialiseSerial(115200);
   InitialiseRFDSerial();
   InitialiseBluetooth();
-  pinMode(FLOW_ANALOG_PIN, INPUT);
-  pinMode(SO2_ANALOG_PIN, INPUT);
-  pinMode(BATT_ANALOG_PIN, INPUT);
     // Print the full MAC address
   Serial.printf("ESP32 Chip MAC Address: %012llX\n", macAddress);
   Status_File_System = initialize_littlefs_format_file_system();
@@ -452,13 +457,12 @@ void setup() {
   status_GPS_module = initialize_GPS();
   status_s300 = initialize_s300();
   // PWM Pin implementation (pump)
-  pinMode(MOTOR_PWM_PIN, OUTPUT);
   ledcAttach(MOTOR_PWM_PIN,200,8);
 
-  // Setup PPS interrupt
-  pinMode(4, INPUT_PULLUP); // PPS is connected to GPIO4
-  attachInterrupt(digitalPinToInterrupt(4), onPPS, RISING);
+  // Setup GPS PPS pin interrupt
+  attachInterrupt(digitalPinToInterrupt(GPS_PPS_PIN), onPPS, RISING);
   Serial.println("Setup finished");
+  digitalWrite(LED_BUILTIN, LOW); // Indicate booting is over
 }
 
 void loop() {
@@ -513,6 +517,7 @@ void loop() {
   if (readSensorsAndLog){
   // Log the time that sensor sampling starts
   sampleStartMillis = millis(); 
+  digitalWrite(LED_BUILTIN, HIGH); // Flash LED each time sensor data is collected and written
   // Get data from BME Sensor
   if (StatusBMESensor) {
     bmeTemperature = bme.readTemperature();
@@ -640,6 +645,7 @@ void loop() {
   SerialRFD.print(write_to_file_string);
   Serial.print(write_to_file_string);
   ESP_BT.print(write_to_file_string);
+  digitalWrite(LED_BUILTIN, LOW); // turn LED off after data was saved
   readSensorsAndLog = false;
 }
 }
