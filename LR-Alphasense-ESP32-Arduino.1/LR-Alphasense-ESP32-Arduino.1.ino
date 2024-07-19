@@ -48,6 +48,8 @@ String last_NMEA = ""; // GPS last string
 bool newGGA = false;
 bool newRMC = false;
 uint64_t chipid = 0;
+int frameNumber = 0;
+String comment = "";
 
 
 // Serial input buffers
@@ -437,6 +439,11 @@ void setup() {
   Status_File_System = initialize_littlefs_format_file_system();
   if (Status_File_System) {
     Serial.println("File system initialized");
+  } else {
+    Serial.println("Filesystem is not working!!! Data will not be saved on ESP32!");
+    ESP_BT.println("Filesystem is not working!!! Data will not be saved on ESP32!");
+    SerialRFD.println("Filesystem is not working!!! Data will not be saved on ESP32!");
+    Status_File_System = initialize_littlefs_format_file_system();
   }
   StatusBMESensor = initialize_bme_sensor();
   StatusHDCSensor = initialize_hdc_sensor();
@@ -449,7 +456,6 @@ void setup() {
   // Setup PPS interrupt
   pinMode(4, INPUT_PULLUP); // PPS is connected to GPIO4
   attachInterrupt(digitalPinToInterrupt(4), onPPS, RISING);
-
   Serial.println("Setup finished");
 }
 
@@ -568,7 +574,16 @@ void loop() {
   
   // Get data from CO2 Sensor
   co2 = get_co2();
-
+  if (frameNumber == 0) {
+    //Insert header if this is the first log line
+    write_to_file_string = "Elapsed ms,DateTime,Latitude,Longitude,Altitude,Fix Type,Temperature,Pressure,Flow,Humidity,SO2 Volts,Batt Volts,CO2 PPM,Comment\n";    
+  } else {
+  if (frameNumber == 1) {
+    //Add metadata as comment to first actual data line
+    comment = "ESP32 Chip ID " + String(chipid);
+  } else {
+    comment = "";
+  }
   write_to_file_string += String(sampleStartMillis);
   write_to_file_string += ",";
     //GPS date-time in ISO-8601 format
@@ -603,14 +618,14 @@ void loop() {
   write_to_file_string += String(co2);
   write_to_file_string += ",";
   write_to_file_string += comment;
-  comment = "";
   write_to_file_string += "\n";
-  
+  }  
+
   // Write data to internal storage
   if (Status_File_System) {
     write_string_to_file(filename, write_to_file_string);
-  }
-  else {
+    frameNumber++;  // Increment the log entry counter
+  } else {
     Serial.println("Filesystem is not working!!! Data will not be saved on ESP32!");
     ESP_BT.println("Filesystem is not working!!! Data will not be saved on ESP32!");
     SerialRFD.println("Filesystem is not working!!! Data will not be saved on ESP32!");
