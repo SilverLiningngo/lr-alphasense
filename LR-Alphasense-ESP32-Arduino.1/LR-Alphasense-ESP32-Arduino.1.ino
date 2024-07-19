@@ -47,7 +47,7 @@ String filename = "/datalogger.txt";
 String last_NMEA = ""; // GPS last string
 bool newGGA = false;
 bool newRMC = false;
-uint64_t chipid = 0;
+uint64_t chipID = 0;
 int frameNumber = 0;
 String comment = "";
 
@@ -428,14 +428,17 @@ void processCommand(const char* input, Stream& output) {
 }
 
 void setup() {
-  chipid = ESP.getEfuseMac(); // Get unique ESP32 chip ID which is essentially the MAC address
+  // Get the ESP32 Chip MAC address
+  uint64_t macAddress = ESP.getEfuseMac();
+  // Store the last 3 bytes (24 bits) of the MAC address
+  chipID = (uint32_t)(macAddress & 0xFFFFFF);
   InitialiseSerial(115200);
   InitialiseRFDSerial();
   InitialiseBluetooth();
   pinMode(FLOW_ANALOG_PIN, INPUT);
   pinMode(SO2_ANALOG_PIN, INPUT);
   pinMode(BATT_ANALOG_PIN, INPUT);
-  Serial.println(String(chipid));
+  Serial.println(String(chipID));
   Status_File_System = initialize_littlefs_format_file_system();
   if (Status_File_System) {
     Serial.println("File system initialized");
@@ -580,7 +583,10 @@ void loop() {
   } else {
   if (frameNumber == 1) {
     //Add metadata as comment to first actual data line
-    comment = "ESP32 Chip ID " + String(chipid);
+    // Create a buffer to hold the formatted string
+    char chipIDStr[9]; // Enough to hold 6 hex digits of chip string + null terminator
+    sprintf(chipIDStr, "%06X", chipID);
+    comment = "ESP32 Chip ID " + String(chipIDStr);
   } else {
     comment = "";
   }
