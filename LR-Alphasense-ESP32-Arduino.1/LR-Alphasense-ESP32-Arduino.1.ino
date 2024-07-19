@@ -47,6 +47,7 @@ String filename = "/datalogger.txt";
 String last_NMEA = ""; // GPS last string
 bool newGGA = false;
 bool newRMC = false;
+uint64_t chipid = 0;
 
 
 // Serial input buffers
@@ -425,12 +426,14 @@ void processCommand(const char* input, Stream& output) {
 }
 
 void setup() {
+  chipid = ESP.getEfuseMac(); // Get unique ESP32 chip ID which is essentially the MAC address
   InitialiseSerial(115200);
   InitialiseRFDSerial();
   InitialiseBluetooth();
   pinMode(FLOW_ANALOG_PIN, INPUT);
   pinMode(SO2_ANALOG_PIN, INPUT);
   pinMode(BATT_ANALOG_PIN, INPUT);
+  Serial.println(String(chipid));
   Status_File_System = initialize_littlefs_format_file_system();
   if (Status_File_System) {
     Serial.println("File system initialized");
@@ -598,6 +601,9 @@ void loop() {
   write_to_file_string += String(actual_batt_voltage, 4);
   write_to_file_string += ",";
   write_to_file_string += String(co2);
+  write_to_file_string += ",";
+  write_to_file_string += comment;
+  comment = "";
   write_to_file_string += "\n";
   
   // Write data to internal storage
