@@ -578,7 +578,7 @@ void loop() {
   co2 = get_co2();
   if (frameNumber == 0) {
     //Insert header if this is the first log line
-    write_to_file_string = "Elapsed ms,DateTime,Latitude,Longitude,Altitude,Fix Type,Temperature,Pressure,Flow,Humidity,SO2 Volts,Batt Volts,CO2 PPM,Comment\n";    
+    write_to_file_string = "Elapsed ms,DateTime,Latitude,Longitude,Altitude,Fix Type,Temperature,Pressure,Humidity,SO2 Volts,Batt Volts,CO2 PPM,Comment\n";    
   } else {
   if (frameNumber == 1) {
     //Add metadata as comment to first actual data line
@@ -614,8 +614,8 @@ void loop() {
   write_to_file_string += ",";
   write_to_file_string += String(hdcHumidity);
   write_to_file_string += ",";
-  write_to_file_string += String(SI_voltage_pin_FLOW, 4);
-  write_to_file_string += ",";
+  //write_to_file_string += String(SI_voltage_pin_FLOW, 4);  // Disabled output of FLOW analog reading
+  //write_to_file_string += ",";
   write_to_file_string += String(actual_SO2_voltage, 4);
   write_to_file_string += ",";
   write_to_file_string += String(actual_batt_voltage, 4);
