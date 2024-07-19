@@ -597,7 +597,7 @@ void loop() {
   write_to_file_string += String(sampleStartMillis);
   write_to_file_string += ",";
     //GPS date-time in ISO-8601 format
-  write_to_file_string += String(GPS.year + 2000) + "-" +
+  write_to_file_string += String((GPS.year + 2000) > 2040 ? 2000 : GPS.year + 2000) + "-" + // fix far future years at gps start
                       String(GPS.month < 10 ? "0" : "") + String(GPS.month) + "-" +
                       String(GPS.day < 10 ? "0" : "") + String(GPS.day) + "T" +
                       String(GPS.hour < 10 ? "0" : "") + String(GPS.hour) + ":" +
