@@ -27,7 +27,7 @@ const int GPS_timeout = 4000;
 
 //Variables
 volatile bool ppsTriggered = false;
-volatile bool captureNMEA = false;
+bool readSensorsAndLog = false;
 unsigned long previousMillis = 0; // Stores the last time the loop ran
 char c;
 bool status_GPS_module = false;
@@ -45,6 +45,9 @@ float hdcHumidity = 0;
 float hdcTemperature = 0;
 String filename = "/datalogger.txt";
 String last_NMEA = ""; // GPS last string
+bool newGGA = false;
+bool newRMC = false;
+
 
 // Serial input buffers
 char StringInputSpeicher[500];
@@ -66,7 +69,6 @@ S300I2C s3(Wire); // S300 object
 // PPS interrupt service routine
 void IRAM_ATTR onPPS() {
   ppsTriggered = true;
-  captureNMEA = true; // Set flag to capture NMEA
 }
  
 //LittleFS Filesystem
@@ -278,6 +280,11 @@ bool initialize_hdc_sensor() {
 }
 
 // GPS implementation
+void clearGPSSimple() { // GPS Clear out any data in the serial buffer
+  while (GPSSerial.available()) {
+    GPSSerial.read();
+  }
+}
 bool clearGPS() { // Delete previously acquired data from GPS
   int start_millis = millis();
   while (!GPS.newNMEAreceived()) {
@@ -388,9 +395,9 @@ void processCommand(const char* input, Stream& output) {
     ESP_BT.println("Printing data...");
     SerialRFD.println("Printing data...");
     read_file_and_print_to_serial(filename);
-    Serial.println("Data print complete.");
-    ESP_BT.println("Data print complete.");
-    SerialRFD.println("Data print complete.");
+    Serial.println("\nData print complete.");
+    ESP_BT.println("\nData print complete.");
+    SerialRFD.println("\nData print complete.");
   } else if (strcmp(input, "delete data") == 0) {
     delete_file(filename);
     Serial.println("Data file deleted.");
@@ -445,39 +452,36 @@ void setup() {
 
 void loop() {
   unsigned long currentMillis = millis();
+  unsigned long sampleStartMillis; // Updated when the sensor data collection starts each time
+  String write_to_file_string = "";
+  c = GPS.read();  //Take one char in from the GPS serial buffer each loop
   
-  last_NMEA = "\n";
   // Collect sensor data if PPS or time interval
   if (ppsTriggered || (currentMillis - previousMillis >= interval)) {
     ppsTriggered = false; // Reset the flag if PPS triggered
+    clearGPSSimple(); // This clears all unparsed bytes from the GPS serial UART queue
     previousMillis = currentMillis; // Update the last run time
-
-    // Capture NMEA sentence immediately after PPS
-  if (captureNMEA) {
-    captureNMEA = false; // Reset the flag
-    delay(ppsDelay); // Short delay to ensure NMEA sentence arrives
-
-    // Get data from GPS Module
-    clearGPS();
-    int start_millis = millis();
-    while (!GPS.newNMEAreceived()) {
-      c = GPS.read();
-      if (((millis() - start_millis) >= GPS_timeout) or (millis() < start_millis)) {
-        break;
-      }
-    }
+    readSensorsAndLog = true;
+  }
 
     if (GPS.newNMEAreceived()) {
       GPS.parse(GPS.lastNMEA());
+      if (strstr(GPS.lastNMEA(), "GGA")) {
+          newGGA = true;
+          //Serial.println("GGA");
+        } else if (strstr(GPS.lastNMEA(), "RMC")) {
+          newRMC = true;
+          //Serial.println("RMC");
+        }
       last_NMEA = GPS.lastNMEA();
       //Serial.println(last_NMEA); // Print to Serial (or store as needed)
-    } else {
-      Serial.println("GPS not working!");
-      ESP_BT.println("GPS not working!");
-      SerialRFD.println("GPS not working!");
-      last_NMEA = "GPS not working!";
     }
-  }
+//    } else {
+//      Serial.println("GPS not working!");
+//      ESP_BT.println("GPS not working!");
+//      SerialRFD.println("GPS not working!");
+//      last_NMEA = "GPS not working!";
+//  }
 
   // Try to read serial input and execute command
   if (readSerialTo(StringInputSpeicher)) {
@@ -494,7 +498,8 @@ void loop() {
   if (readSerialRFDTo(RFDStringInputSpeicher)) {
     processCommand(RFDStringInputSpeicher, SerialRFD);
   }
-  
+
+  if (readSensorsAndLog){
   // Log the time that sensor sampling starts
   sampleStartMillis = millis(); 
   // Get data from BME Sensor
@@ -563,6 +568,23 @@ void loop() {
 
   write_to_file_string += String(sampleStartMillis);
   write_to_file_string += ",";
+    //GPS date-time in ISO-8601 format
+  write_to_file_string += String(GPS.year + 2000) + "-" +
+                      String(GPS.month < 10 ? "0" : "") + String(GPS.month) + "-" +
+                      String(GPS.day < 10 ? "0" : "") + String(GPS.day) + "T" +
+                      String(GPS.hour < 10 ? "0" : "") + String(GPS.hour) + ":" +
+                      String(GPS.minute < 10 ? "0" : "") + String(GPS.minute) + ":" +
+                      String(GPS.seconds < 10 ? "0" : "") + String(GPS.seconds) + "Z";
+  write_to_file_string += ",";
+    // Assemble latitude, longitude, altitude, and fix quality
+  write_to_file_string += String(GPS.latitudeDegrees,6);
+  write_to_file_string += ",";
+  write_to_file_string += String(GPS.longitudeDegrees,6);
+  write_to_file_string += ",";
+  write_to_file_string += String(GPS.altitude);
+  write_to_file_string += ",";
+  write_to_file_string += String(GPS.fixquality);
+  write_to_file_string += ",";
   write_to_file_string += String(hdcTemperature);
   write_to_file_string += ",";
   write_to_file_string += String(bmePressure);
@@ -576,10 +598,7 @@ void loop() {
   write_to_file_string += String(actual_batt_voltage, 4);
   write_to_file_string += ",";
   write_to_file_string += String(co2);
-  write_to_file_string += ",";
-
-  // Add previously captured NMEA data
-  write_to_file_string += last_NMEA;
+  write_to_file_string += "\n";
   
   // Write data to internal storage
   if (Status_File_System) {
@@ -595,5 +614,6 @@ void loop() {
   SerialRFD.print(write_to_file_string);
   Serial.print(write_to_file_string);
   ESP_BT.print(write_to_file_string);
+  readSensorsAndLog = false;
 }
 }
