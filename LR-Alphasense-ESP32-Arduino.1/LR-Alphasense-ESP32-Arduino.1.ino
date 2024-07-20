@@ -168,7 +168,7 @@ void writeSerialNumberToPreferences(const char* key, String tempSerialNumber) {
 void InitialiseSerial(int BaudRate) {
   Serial.begin(BaudRate); // Start serial monitor at 115200 (ESP32)
   delay(500);
-  Serial.println("BOOTUP - Serial connection established.");
+  Serial.println("Serial connection established.");
   if (readSerialTo(StringInputSpeicher)) {
     Serial.println("Old data that was stored in buffer:");
     Serial.println(StringInputSpeicher);
@@ -255,6 +255,18 @@ bool readSerialRFDTo(char serialSpeicher[]) {
   return false;
 }
 
+void printToAllStr(const char* str) {
+    Serial.print(str);
+    ESP_BT.print(str);
+    SerialRFD.print(str);
+}
+
+void printToAllStr(const String& str) {
+    Serial.print(str);
+    ESP_BT.print(str);
+    SerialRFD.print(str);
+}
+
 // read a SI voltage from a pin
 float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit_adc, float
                            max_voltage) {
@@ -283,11 +295,11 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
 bool initialize_bme_sensor() {
   StatusBMESensor = bme.begin(0x76);
   if (!StatusBMESensor) {
-    Serial.println("Could not find a valid BME280 sensor!");
+    printToAllStr("Could not find a valid BME280 sensor!\n");
     StatusBMESensor = false;
     return false;
   }
-  Serial.println("Initialization of BME Sensor done.");
+  printToAllStr("Initialization of BME Sensor done.\n");
   StatusBMESensor = true;
   return true;
 }
@@ -303,7 +315,7 @@ bool initialize_hdc_sensor() {
   //begin measuring
   hdc.triggerMeasurement();
   StatusHDCSensor = true;
-  Serial.println("HDC Humidity Sensor Initialized");
+  printToAllStr("HDC Humidity Sensor Initialized\n");
   return true;
 }
 
@@ -354,11 +366,11 @@ bool initialize_GPS() { // Setup of GPS Module
   delay(100);
   status_GPS_module = clearGPS();
   if (status_GPS_module) {
-    Serial.println("GPS connection established!");
+    printToAllStr("GPS connection established!\n");
     return true;
   }
   else {
-    Serial.println("GPS initialization failed!");
+    printToAllStr("GPS initialization failed!\n");
     return false;
   }
   return true;
@@ -373,11 +385,11 @@ bool check_sensor_presence(uint8_t address) {
   return false; // Sensor did not acknowledge
 }
 bool initialize_s300() {
-  Serial.print("S300 CO2 sensor... ");
+  printToAllStr("S300 CO2 sensor... ");
   Wire.begin();
   // Test to see if the CO2 sensor is present, the library "begin" function never returns false
   if (!check_sensor_presence(S300I2C_ADDR)) {
-    Serial.println("not found!");
+    printToAllStr("not found!\n");
     return false;
   }
     s3.begin(S300I2C_ADDR);
@@ -385,7 +397,7 @@ bool initialize_s300() {
     s3.wakeup();
     s3.end_mcdl();
     s3.end_acdl();
-    Serial.println("Initialized");
+    printToAllStr("Initialized\n");
     return true;
 }
 unsigned int get_co2() {
@@ -429,18 +441,12 @@ void processCommand(const char* input, Stream& output) {
 
     output.println();
   } else if (strcmp(input, "print data") == 0) {
-    Serial.println("Printing data...");
-    ESP_BT.println("Printing data...");
-    SerialRFD.println("Printing data...");
+    printToAllStr("Printing data...\n");
     read_file_and_print_to_serial(filename);
-    Serial.println("\nData print complete.");
-    ESP_BT.println("\nData print complete.");
-    SerialRFD.println("\nData print complete.");
+    printToAllStr("\nData print complete.\n");
   } else if (strcmp(input, "delete data") == 0) {
     delete_file(filename);
-    Serial.println("Data file deleted.");
-    ESP_BT.println("Data file deleted.");
-    SerialRFD.println("Data file deleted.");
+    printToAllStr("Data file deleted.\n");
   } else if (strncmp(input, "set so2Serial ", 15) == 0) {  // Set SO2 serial number into persistent storage
     so2Serial = input + 15;
     writeSerialNumberToPreferences(so2Key, so2Serial);
@@ -491,17 +497,19 @@ void setup() {
   InitialiseSerial(115200);
   InitialiseRFDSerial();
   InitialiseBluetooth();
+  printToAllStr("BOOTING...\n");
     // Print the full MAC address
-  Serial.printf("ESP32 Chip MAC Address: %012llX\n", macAddress);
-  Serial.println("SO2 Sensor Serial Number: " + so2Serial);
-  Serial.println("CO2 Sensor Serial Number: " + co2Serial);
+  char macStr[13]; // 12 characters for the MAC address and 1 for the null terminator
+  sprintf(macStr, "%012llX", macAddress);
+  String macAddressString = String(macStr);
+  printToAllStr("ESP32 Chip MAC Address: " + macAddressString + "\n"); 
+  printToAllStr("SO2 Sensor Serial Number: " + so2Serial + "\n");
+  printToAllStr("CO2 Sensor Serial Number: " + co2Serial + "\n");
   Status_File_System = initialize_littlefs_format_file_system();
   if (Status_File_System) {
-    Serial.println("File system initialized");
+    printToAllStr("File system initialized\n");
   } else {
-    Serial.println("Filesystem is not working!!! Data will not be saved on ESP32!");
-    ESP_BT.println("Filesystem is not working!!! Data will not be saved on ESP32!");
-    SerialRFD.println("Filesystem is not working!!! Data will not be saved on ESP32!");
+    printToAllStr("Filesystem is not working!!! Data will not be saved on ESP32!\n");
     Status_File_System = initialize_littlefs_format_file_system();
   }
 
@@ -515,7 +523,7 @@ void setup() {
 
   // Setup GPS PPS pin interrupt
   attachInterrupt(digitalPinToInterrupt(GPS_PPS_PIN), onPPS, RISING);
-  Serial.println("Setup finished");
+  printToAllStr("Setup finished\n");
   digitalWrite(LED_BUILTIN, LOW); // Indicate booting is over
 }
 
@@ -583,9 +591,7 @@ void loop() {
     bmeTemperature = 0;
     bmePressure = 0;
     bmeHumidity = 0;
-    Serial.println("No BME sensor available!!");
-    ESP_BT.println("No BME sensor available!!");
-    SerialRFD.println("No BME sensor available!!");
+    printToAllStr("No BME sensor available!!\n");
     StatusBMESensor = initialize_bme_sensor();
     write_to_file_string += "No BME Sensor available,,,";
   }
@@ -597,42 +603,28 @@ void loop() {
   else {
     hdcHumidity = 0;
     hdcTemperature = 0;
-    Serial.println("No HDC sensor available!!");
+    printToAllStr("No HDC sensor available!!\n");
   }
   // Get analog voltages from pins
   // flow meter
   float SI_voltage_pin_FLOW = readSIVoltageFromPin(FLOW_ANALOG_PIN, 10, 12, 3.3);
   if (SI_voltage_pin_FLOW >= 3.7) {
-    Serial.print("Problem with ADC on Pin FLOW; measured voltage=");
-    Serial.println(SI_voltage_pin_FLOW);
-    ESP_BT.print("Problem with ADC on Pin FLOW; measured voltage=");
-    ESP_BT.println(SI_voltage_pin_FLOW);
-    SerialRFD.print("Problem with ADC on Pin FLOW; measured voltage=");
-    SerialRFD.println(SI_voltage_pin_FLOW);
+    printToAllStr("Problem with ADC on Pin FLOW; ADC voltage=" + String(SI_voltage_pin_FLOW) + "\n");
   }
   // SO2
   float SI_voltage_pin_SO2 = readSIVoltageFromPin(SO2_ANALOG_PIN, 10, 12, 3.3);
   float actual_SO2_voltage = SI_voltage_pin_SO2 * SO2_VOLTAGE_SCALING;
   if (SI_voltage_pin_SO2 >= 3.7) {
-    Serial.print("Problem with ADC on Pin SO2; ADC voltage=");
-    Serial.println(SI_voltage_pin_SO2);
-    ESP_BT.print("Problem with ADC on Pin SO2; ADC voltage=");
-    ESP_BT.println(SI_voltage_pin_SO2);
-    SerialRFD.print("Problem with ADC on Pin SO2; ADC voltage=");
-    SerialRFD.println(SI_voltage_pin_SO2);
+    printToAllStr("Problem with ADC on Pin SO2; ADC voltage=" + String(SI_voltage_pin_SO2) + "\n");
   }
   // Battery
   float SI_voltage_pin_BATT = readSIVoltageFromPin(BATT_ANALOG_PIN, 10, 12, 3.3);
   float actual_batt_voltage = SI_voltage_pin_BATT * BATT_VOLTAGE_SCALING;
   if (SI_voltage_pin_BATT >= 3.7) {
-    String localError = "Problem with ADC on Pin BATT; ADC voltage=" + String(SI_voltage_pin_BATT);
-    comment += localError + " ";
-    Serial.println(localError);
-    //Serial.println(SI_voltage_pin_BATT);
-    ESP_BT.println(localError);
-    //ESP_BT.println(SI_voltage_pin_BATT);
-    SerialRFD.println(localError);
-    //SerialRFD.println(SI_voltage_pin_BATT);
+     printToAllStr("Problem with ADC on Pin BATT; ADC voltage=" + String(SI_voltage_pin_BATT) + "\n");
+//    String localError = "Problem with ADC on Pin BATT; ADC voltage=" + String(SI_voltage_pin_BATT) + "\n";
+//    comment += localError + " ";
+//    printToAllStr(localError);
   }
   
   // Get data from CO2 Sensor
@@ -690,15 +682,11 @@ void loop() {
     write_string_to_file(filename, write_to_file_string);
     frameNumber++;  // Increment the log entry counter
   } else {
-    Serial.println("Filesystem is not working!!! Data will not be saved on ESP32!");
-    ESP_BT.println("Filesystem is not working!!! Data will not be saved on ESP32!");
-    SerialRFD.println("Filesystem is not working!!! Data will not be saved on ESP32!");
+    printToAllStr("Filesystem is not working!!! Data will not be saved on ESP32!");
     Status_File_System = initialize_littlefs_format_file_system();
   }
   // Print data to all serial interfaces
-  SerialRFD.print(write_to_file_string);
-  Serial.print(write_to_file_string);
-  ESP_BT.print(write_to_file_string);
+  printToAllStr(write_to_file_string);
   digitalWrite(LED_BUILTIN, LOW); // turn LED off after data was saved
   comment = "";
   readSensorsAndLog = false;
