@@ -401,6 +401,7 @@ unsigned int get_co2() {
 void processCommand(const char* input, Stream& output) {
   output.print("Serial input: ");
   output.println(input);
+  comment += "Command: " + String(input) + " ";
 
   if (strcmp(input, "help") == 0) {
     output.print("Print Datalogging file to serial terminal: ");
@@ -624,12 +625,14 @@ void loop() {
   float SI_voltage_pin_BATT = readSIVoltageFromPin(BATT_ANALOG_PIN, 10, 12, 3.3);
   float actual_batt_voltage = SI_voltage_pin_BATT * BATT_VOLTAGE_SCALING;
   if (SI_voltage_pin_BATT >= 3.7) {
-    Serial.print("Problem with ADC on Pin BATT; ADC voltage=");
-    Serial.println(SI_voltage_pin_BATT);
-    ESP_BT.print("Problem with ADC on Pin BATT; ADC voltage=");
-    ESP_BT.println(SI_voltage_pin_BATT);
-    SerialRFD.print("Problem with ADC on Pin BATT; ADC voltage=");
-    SerialRFD.println(SI_voltage_pin_BATT);
+    String localError = "Problem with ADC on Pin BATT; ADC voltage=" + String(SI_voltage_pin_BATT);
+    comment += localError + " ";
+    Serial.println(localError);
+    //Serial.println(SI_voltage_pin_BATT);
+    ESP_BT.println(localError);
+    //ESP_BT.println(SI_voltage_pin_BATT);
+    SerialRFD.println(localError);
+    //SerialRFD.println(SI_voltage_pin_BATT);
   }
   
   // Get data from CO2 Sensor
@@ -643,7 +646,7 @@ void loop() {
     // Create a buffer to hold the formatted string
     char chipIDStr[17]; // Enough to hold 6 hex digits of chip string + null terminator
     sprintf(chipIDStr, "%012llX", macAddress);
-    comment = "\"ESP32 MAC: " + String(chipIDStr) + "  SO2 SN: " + String(so2Serial) + "  CO2 SN: " + String(co2Serial) + "\"";
+    comment = "ESP32 MAC: " + String(chipIDStr) + "  SO2 SN: " + String(so2Serial) + "  CO2 SN: " + String(co2Serial);
   }
   write_to_file_string += String(sampleStartMillis);
   write_to_file_string += ",";
@@ -678,7 +681,7 @@ void loop() {
   write_to_file_string += ",";
   write_to_file_string += String(co2);
   write_to_file_string += ",";
-  write_to_file_string += comment;
+  write_to_file_string += (comment.length() > 0 ? "\"" + comment + "\"" : ""); // If there's a comment put quotes around it
   write_to_file_string += "\n";
   }  
 
