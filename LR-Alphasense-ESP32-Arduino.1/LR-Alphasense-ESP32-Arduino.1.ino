@@ -11,6 +11,7 @@
 #include <HardwareSerial.h>
 #include "s300i2c.h"
 #include <Adafruit_GPS.h>
+#include <Preferences.h> // Include Preferences library
 
 //Pin definitions
 #define FLOW_ANALOG_PIN 36 // Not used
@@ -25,6 +26,10 @@ const float SO2_VOLTAGE_SCALING = 1.49;  //  Scaling factor based on resistor di
 const long interval = 2000;       // Desired interval (1 second)
 const int ppsDelay = 0;          // Delay in milliseconds after PPS to read NMEA sentences
 const int GPS_timeout = 4000;
+const int maxSerialLength = 20;  // Maximum allowed length for serial numbers
+const char* so2Key = "so2Serial"; // SO2 Sensor Serial number reference
+const char* co2Key = "co2Serial"; // CO2 Sensor Serial number reference
+
 
 //Variables
 volatile bool ppsTriggered = false;
@@ -49,10 +54,10 @@ String last_NMEA = ""; // GPS last string
 bool newGGA = false;
 bool newRMC = false;
 uint64_t macAddress = 0;
-//uint32_t chipID = 0;
 int frameNumber = 0;
 String comment = "";
-
+String so2Serial = "";
+String co2Serial = "";
 
 // Serial input buffers
 char StringInputSpeicher[500];
@@ -69,7 +74,7 @@ Adafruit_BME280 bme; // BME object
 HDC2080 hdc(0x40); //HDC2080 Sensor Object
 S300I2C s3(Wire); // S300 object
 
-
+Preferences preferencesSaved; // Create a Preferences object, persists across reboots
 
 // PPS interrupt service routine
 void IRAM_ATTR onPPS() {
@@ -139,6 +144,24 @@ bool delete_file(String filename) {
     return false;
   }
   return false;
+}
+
+// These preferences persist across boots
+// Function to read a serial number from Preferences
+String readSerialNumberFromPreferences(const char* key) {
+  preferencesSaved.begin("sensorData", true);
+  String tempSerialNumber = preferencesSaved.getString(key, "Not set");
+  preferencesSaved.end();
+  return tempSerialNumber;
+}
+// Function to write a serial number to Preferences
+void writeSerialNumberToPreferences(const char* key, String tempSerialNumber) {
+  if (tempSerialNumber.length() > maxSerialLength) {
+    tempSerialNumber = tempSerialNumber.substring(0, maxSerialLength);
+  }
+  preferencesSaved.begin("sensorData", false);
+  preferencesSaved.putString(key, tempSerialNumber);
+  preferencesSaved.end();
 }
 
 // Serial communication
@@ -389,11 +412,20 @@ void processCommand(const char* input, Stream& output) {
     output.print("Switch pump off: ");
     output.println("'pump_off'");
     for (int i = 0; i <= 30; i += 10) {
-      output.print("Switch pump ");
+      output.print("Switch pump duty cycle (max 250): '");
       output.print(i);
-      output.println("/250: ");
+      output.println("'");
     }
-    output.println("...");
+    output.println(" ...etc");
+    output.print("Set SO2 sensor serial number: ");
+    output.println("'set so2serial <serial number>'");
+    output.print("Set CO2 sensor serial number: ");
+    output.println("'set co2serial <serial number>'");
+    output.print("Get SO2 sensor serial number: ");
+    output.println("'get so2serial'");
+    output.print("Get CO2 sensor serial number: ");
+    output.println("'get co2_serial'");
+
     output.println();
   } else if (strcmp(input, "print data") == 0) {
     Serial.println("Printing data...");
@@ -408,6 +440,20 @@ void processCommand(const char* input, Stream& output) {
     Serial.println("Data file deleted.");
     ESP_BT.println("Data file deleted.");
     SerialRFD.println("Data file deleted.");
+  } else if (strncmp(input, "set so2Serial ", 15) == 0) {  // Set SO2 serial number into persistent storage
+    so2Serial = input + 15;
+    writeSerialNumberToPreferences(so2Key, so2Serial);
+    output.println("SO2 sensor serial number set to: " + so2Serial);
+  } else if (strncmp(input, "set co2Serial ", 15) == 0) {  // Set CO2 serial number into persistent storage
+    co2Serial = input + 15;
+    writeSerialNumberToPreferences(co2Key, co2Serial);
+    output.println("CO2 sensor serial number set to: " + co2Serial);
+  } else if (strcmp(input, "get so2Serial") == 0) {
+    so2Serial = readSerialNumberFromPreferences(so2Key);
+    output.println("SO2 sensor serial number: " + so2Serial);
+  } else if (strcmp(input, "get co2Serial") == 0) {
+    co2Serial = readSerialNumberFromPreferences(co2Key);
+    output.println("CO2 sensor serial number: " + co2Serial);
   } else if (strcmp(input, "pump_on") == 0) {
     digitalWrite(MOTOR_PWM_PIN, HIGH);
     ledcWrite(MOTOR_PWM_PIN, 254);
@@ -438,11 +484,16 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH); // Indicate booting setup
   macAddress = ESP.getEfuseMac(); // Get the ESP32 Chip MAC address, 6 bytes
+  // Read sensor serial numbers at startup
+  so2Serial = readSerialNumberFromPreferences(so2Key);
+  co2Serial = readSerialNumberFromPreferences(co2Key);
   InitialiseSerial(115200);
   InitialiseRFDSerial();
   InitialiseBluetooth();
     // Print the full MAC address
   Serial.printf("ESP32 Chip MAC Address: %012llX\n", macAddress);
+  Serial.println("SO2 Sensor Serial Number: " + so2Serial);
+  Serial.println("CO2 Sensor Serial Number: " + co2Serial);
   Status_File_System = initialize_littlefs_format_file_system();
   if (Status_File_System) {
     Serial.println("File system initialized");
@@ -452,6 +503,8 @@ void setup() {
     SerialRFD.println("Filesystem is not working!!! Data will not be saved on ESP32!");
     Status_File_System = initialize_littlefs_format_file_system();
   }
+
+  
   StatusBMESensor = initialize_bme_sensor();
   StatusHDCSensor = initialize_hdc_sensor();
   status_GPS_module = initialize_GPS();
@@ -590,9 +643,7 @@ void loop() {
     // Create a buffer to hold the formatted string
     char chipIDStr[17]; // Enough to hold 6 hex digits of chip string + null terminator
     sprintf(chipIDStr, "%012llX", macAddress);
-    comment = "ESP32 Chip MAC ID " + String(chipIDStr);
-  } else {
-    comment = "";
+    comment = "\"ESP32 MAC: " + String(chipIDStr) + "  SO2 SN: " + String(so2Serial) + "  CO2 SN: " + String(co2Serial) + "\"";
   }
   write_to_file_string += String(sampleStartMillis);
   write_to_file_string += ",";
@@ -646,6 +697,7 @@ void loop() {
   Serial.print(write_to_file_string);
   ESP_BT.print(write_to_file_string);
   digitalWrite(LED_BUILTIN, LOW); // turn LED off after data was saved
+  comment = "";
   readSensorsAndLog = false;
 }
 }
