@@ -12,6 +12,7 @@
 #include "s300i2c.h"
 #include <Adafruit_GPS.h>
 #include <Preferences.h> // Include Preferences library
+#include <esp_adc_cal.h>
 
 //Pin definitions
 #define FLOW_ANALOG_PIN 36 // Not used
@@ -58,6 +59,7 @@ int frameNumber = 0;
 String comment = "";
 String so2Serial = "";
 String co2Serial = "";
+esp_adc_cal_characteristics_t *adc_chars; // Variable for ADC calibration
 
 // Serial input buffers
 char StringInputSpeicher[500];
@@ -274,9 +276,23 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
   float avg_adc_value = float(voltage_sum) / float(anzahl_spannungs_messung);
 
   //ADC LUT correction here
-  float corrected_adc_value = ADC_LUT[int(avg_adc_value)];
+  float corrected_adc_valueLUT = ADC_LUT[int(avg_adc_value)];
   
-  si_voltage = (corrected_adc_value * max_voltage) / total_adc_res;
+  // Use internal calibration to get the voltage
+  uint32_t raw_voltage_mV = esp_adc_cal_raw_to_voltage((uint32_t)avg_adc_value, adc_chars);
+  float corrected_adc_value = (float)raw_voltage_mV / 1000.0; // Convert mV to V
+  
+  float si_voltageLUT = (corrected_adc_valueLUT * max_voltage) / total_adc_res;
+  
+  si_voltage = (corrected_adc_value * total_adc_res) / max_voltage;
+  Serial.print("\nLUT ADC: ");
+  Serial.print(corrected_adc_valueLUT);
+  Serial.print("   LUT Volts: ");
+  Serial.println(si_voltageLUT);
+  Serial.print("Internal ADC: ");
+  Serial.println(corrected_adc_value);
+  Serial.print("  Internal Volts: ");
+  Serial.println(si_voltage);
   return si_voltage;
 }
 // BME280 Temp, Pressure, Humidity Sensor implementation
@@ -488,6 +504,11 @@ void setup() {
   // Read sensor serial numbers at startup
   so2Serial = readSerialNumberFromPreferences(so2Key);
   co2Serial = readSerialNumberFromPreferences(co2Key);
+
+    // Initialize ADC calibration
+  adc_chars = (esp_adc_cal_characteristics_t *)calloc(1, sizeof(esp_adc_cal_characteristics_t));
+  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, adc_chars);
+
   InitialiseSerial(115200);
   InitialiseRFDSerial();
   InitialiseBluetooth();
@@ -612,7 +633,7 @@ void loop() {
   }
   // SO2
   float SI_voltage_pin_SO2 = readSIVoltageFromPin(SO2_ANALOG_PIN, 10, 12, 3.3);
-  float actual_SO2_voltage = SI_voltage_pin_SO2 * SO2_VOLTAGE_SCALING;
+  float actual_SO2_voltage = SI_voltage_pin_SO2; //* SO2_VOLTAGE_SCALING;
   if (SI_voltage_pin_SO2 >= 3.7) {
     Serial.print("Problem with ADC on Pin SO2; ADC voltage=");
     Serial.println(SI_voltage_pin_SO2);
@@ -623,7 +644,7 @@ void loop() {
   }
   // Battery
   float SI_voltage_pin_BATT = readSIVoltageFromPin(BATT_ANALOG_PIN, 10, 12, 3.3);
-  float actual_batt_voltage = SI_voltage_pin_BATT * BATT_VOLTAGE_SCALING;
+  float actual_batt_voltage = SI_voltage_pin_BATT; //* BATT_VOLTAGE_SCALING;
   if (SI_voltage_pin_BATT >= 3.7) {
     String localError = "Problem with ADC on Pin BATT; ADC voltage=" + String(SI_voltage_pin_BATT);
     comment += localError + " ";
