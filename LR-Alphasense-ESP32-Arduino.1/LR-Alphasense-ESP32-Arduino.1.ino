@@ -28,8 +28,8 @@ const long interval = 2000;       // Desired interval (1 second)
 const int ppsDelay = 0;          // Delay in milliseconds after PPS to read NMEA sentences
 const int GPS_timeout = 4000;
 const int maxSerialLength = 20;  // Maximum allowed length for serial numbers
-const char* so2Key = "so2Serial"; // SO2 Sensor Serial number reference
-const char* co2Key = "co2Serial"; // CO2 Sensor Serial number reference
+const char* so2Key = "so2serial"; // SO2 Sensor Serial number reference
+const char* co2Key = "co2serial"; // CO2 Sensor Serial number reference
 
 
 //Variables
@@ -57,8 +57,8 @@ bool newRMC = false;
 uint64_t macAddress = 0;
 int frameNumber = 0;
 String comment = "";
-String so2Serial = "";
-String co2Serial = "";
+String so2serial = "";
+String co2serial = "";
 esp_adc_cal_characteristics_t *adc_chars; // Variable for ADC calibration
 
 // Serial input buffers
@@ -261,7 +261,7 @@ bool readSerialRFDTo(char serialSpeicher[]) {
 float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit_adc, float
                            max_voltage) {
   float si_voltage = 0;
-  long long voltage_sum = 0;
+  int adc_sum = 0;
   if (anzahl_spannungs_messung >= 300000) {
     anzahl_spannungs_messung = 300000;
   }
@@ -270,10 +270,10 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
   }
   delay(3);
   for (int i = 0; i < anzahl_spannungs_messung; i++) {
-    voltage_sum += analogRead(volt_pin);
+    adc_sum += analogRead(volt_pin);
   }
   int total_adc_res = int(pow(2, x_bit_adc));
-  float avg_adc_value = float(voltage_sum) / float(anzahl_spannungs_messung);
+  float avg_adc_value = float(adc_sum) / float(anzahl_spannungs_messung);
 
   //ADC LUT calibration correction here
 //  float corrected_adc_valueLUT = ADC_LUT[int(avg_adc_value)];
@@ -441,7 +441,7 @@ void processCommand(const char* input, Stream& output) {
     output.print("Get SO2 sensor serial number: ");
     output.println("'get so2serial'");
     output.print("Get CO2 sensor serial number: ");
-    output.println("'get co2_serial'");
+    output.println("'get co2serial'");
 
     output.println();
   } else if (strcmp(input, "print data") == 0) {
@@ -457,20 +457,20 @@ void processCommand(const char* input, Stream& output) {
     Serial.println("Data file deleted.");
     ESP_BT.println("Data file deleted.");
     SerialRFD.println("Data file deleted.");
-  } else if (strncmp(input, "set so2Serial ", 15) == 0) {  // Set SO2 serial number into persistent storage
-    so2Serial = input + 15;
-    writeSerialNumberToPreferences(so2Key, so2Serial);
-    output.println("SO2 sensor serial number set to: " + so2Serial);
-  } else if (strncmp(input, "set co2Serial ", 15) == 0) {  // Set CO2 serial number into persistent storage
-    co2Serial = input + 15;
-    writeSerialNumberToPreferences(co2Key, co2Serial);
-    output.println("CO2 sensor serial number set to: " + co2Serial);
-  } else if (strcmp(input, "get so2Serial") == 0) {
-    so2Serial = readSerialNumberFromPreferences(so2Key);
-    output.println("SO2 sensor serial number: " + so2Serial);
-  } else if (strcmp(input, "get co2Serial") == 0) {
-    co2Serial = readSerialNumberFromPreferences(co2Key);
-    output.println("CO2 sensor serial number: " + co2Serial);
+  } else if (strncmp(input, "set so2serial ", 13) == 0) {  // Set SO2 serial number into persistent storage
+    so2serial = input + 14;
+    writeSerialNumberToPreferences(so2Key, so2serial);
+    output.println("SO2 sensor serial number set to: " + so2serial);
+  } else if (strncmp(input, "set co2serial ", 13) == 0) {  // Set CO2 serial number into persistent storage
+    co2serial = input + 14;
+    writeSerialNumberToPreferences(co2Key, co2serial);
+    output.println("CO2 sensor serial number set to: " + co2serial);
+  } else if (strcmp(input, "get so2serial") == 0) {
+    so2serial = readSerialNumberFromPreferences(so2Key);
+    output.println("SO2 sensor serial number: " + so2serial);
+  } else if (strcmp(input, "get co2serial") == 0) {
+    co2serial = readSerialNumberFromPreferences(co2Key);
+    output.println("CO2 sensor serial number: " + co2serial);
   } else if (strcmp(input, "pump_on") == 0) {
     digitalWrite(MOTOR_PWM_PIN, HIGH);
     ledcWrite(MOTOR_PWM_PIN, 254);
@@ -502,8 +502,8 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH); // Indicate booting setup
   macAddress = ESP.getEfuseMac(); // Get the ESP32 Chip MAC address, 6 bytes
   // Read sensor serial numbers at startup
-  so2Serial = readSerialNumberFromPreferences(so2Key);
-  co2Serial = readSerialNumberFromPreferences(co2Key);
+  so2serial = readSerialNumberFromPreferences(so2Key);
+  co2serial = readSerialNumberFromPreferences(co2Key);
 
     // Initialize ADC calibration
   adc_chars = (esp_adc_cal_characteristics_t *)calloc(1, sizeof(esp_adc_cal_characteristics_t));
@@ -514,8 +514,8 @@ void setup() {
   InitialiseBluetooth();
     // Print the full MAC address
   Serial.printf("ESP32 Chip MAC Address: %012llX\n", macAddress);
-  Serial.println("SO2 Sensor Serial Number: " + so2Serial);
-  Serial.println("CO2 Sensor Serial Number: " + co2Serial);
+  Serial.println("SO2 Sensor Serial Number: " + so2serial);
+  Serial.println("CO2 Sensor Serial Number: " + co2serial);
   Status_File_System = initialize_littlefs_format_file_system();
   if (Status_File_System) {
     Serial.println("File system initialized");
@@ -667,7 +667,7 @@ void loop() {
     // Create a buffer to hold the formatted string
     char chipIDStr[17]; // Enough to hold 6 hex digits of chip string + null terminator
     sprintf(chipIDStr, "%012llX", macAddress);
-    comment = "ESP32 MAC: " + String(chipIDStr) + "  SO2 SN: " + String(so2Serial) + "  CO2 SN: " + String(co2Serial);
+    comment = "ESP32 MAC: " + String(chipIDStr) + "  SO2 SN: " + String(so2serial) + "  CO2 SN: " + String(co2serial);
   }
   write_to_file_string += String(sampleStartMillis);
   write_to_file_string += ",";
