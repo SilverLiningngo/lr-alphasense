@@ -62,6 +62,8 @@ int frameNumber = 0;
 String comment = "";
 String so2serial = "";
 String co2serial = "";
+float avg_adc_value_global = 0;
+
 esp_adc_cal_characteristics_t *adc_chars; // Variable for ADC calibration
 
 // Serial input buffers
@@ -277,6 +279,7 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
   }
   int total_adc_res = int(pow(2, x_bit_adc));
   float avg_adc_value = float(adc_sum) / float(anzahl_spannungs_messung);
+  avg_adc_value_global = avg_adc_value; // TEMPORARY ADC RAW GLOBAL VARIABLE
   float avg_adc_valueADC = avg_adc_value;
   float si_voltageADC = (avg_adc_value * max_voltage) / total_adc_res;
 
@@ -640,8 +643,9 @@ void loop() {
 //    SerialRFD.println(SI_voltage_pin_FLOW);
 //  }
   // SO2
-  float SI_voltage_pin_SO2 = readSIVoltageFromPin(SO2_ANALOG_PIN, 10, 12, 3.3);
+  float SI_voltage_pin_SO2 = readSIVoltageFromPin(SO2_ANALOG_PIN, 4933, 12, 3.3); //Sample number is just a prime around 5000, takes about 100ms
   float actual_SO2_voltage = SI_voltage_pin_SO2 * SO2_VOLTAGE_SCALING;
+  int SO2_avg_adc = int(avg_adc_value_global);
   if (SI_voltage_pin_SO2 >= 3.7) {
     Serial.print("Problem with ADC on Pin SO2; ADC voltage=");
     Serial.println(SI_voltage_pin_SO2);
@@ -651,7 +655,7 @@ void loop() {
     SerialRFD.println(SI_voltage_pin_SO2);
   }
   // Battery
-  float SI_voltage_pin_BATT = readSIVoltageFromPin(BATT_ANALOG_PIN, 10, 12, 3.3);
+  float SI_voltage_pin_BATT = readSIVoltageFromPin(BATT_ANALOG_PIN, 211, 12, 3.3);
   float actual_batt_voltage = SI_voltage_pin_BATT * BATT_VOLTAGE_SCALING;
   if (SI_voltage_pin_BATT >= 3.7) {
     String localError = "Problem with ADC on Pin BATT; ADC voltage=" + String(SI_voltage_pin_BATT);
@@ -668,7 +672,7 @@ void loop() {
   co2 = get_co2();
   if (frameNumber == 0) {
     //Insert header if this is the first log line
-    write_to_file_string = "Elapsed ms,DateTime,Latitude,Longitude,Altitude,Fix Type,Temperature,Pressure,Humidity,SO2 Volts,Batt Volts,CO2 PPM,Comment\n";    
+    write_to_file_string = "Elapsed ms,DateTime,Latitude,Longitude,Altitude,Fix Type,Temperature,Pressure,Humidity,SO2 ADC,SO2 Volts,Batt Volts,CO2 PPM,Comment\n";    
   } else {
   if (frameNumber == 1) {
     //Add metadata as comment to first actual data line
@@ -704,9 +708,11 @@ void loop() {
   write_to_file_string += ",";
   //write_to_file_string += String(SI_voltage_pin_FLOW, 4);  // Disabled output of FLOW analog reading
   //write_to_file_string += ",";
-  write_to_file_string += String(actual_SO2_voltage, 4);
+  write_to_file_string += String(SO2_avg_adc);
   write_to_file_string += ",";
-  write_to_file_string += String(actual_batt_voltage, 4);
+  write_to_file_string += String(actual_SO2_voltage, 3);
+  write_to_file_string += ",";
+  write_to_file_string += String(actual_batt_voltage, 3);
   write_to_file_string += ",";
   write_to_file_string += String(co2);
   write_to_file_string += ",";
