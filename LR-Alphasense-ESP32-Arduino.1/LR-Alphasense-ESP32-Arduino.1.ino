@@ -259,7 +259,7 @@ bool readSerialRFDTo(char serialSpeicher[]) {
 float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit_adc, float
                            max_voltage) {
   float si_voltage = 0;
-  long long voltage_sum = 0;
+  int adc_sum = 0;
   if (anzahl_spannungs_messung >= 300000) {
     anzahl_spannungs_messung = 300000;
   }
@@ -268,11 +268,12 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
   }
   delay(3);
   for (int i = 0; i < anzahl_spannungs_messung; i++) {
-    voltage_sum += analogRead(volt_pin);
+    adc_sum += analogRead(volt_pin);
   }
   int total_adc_res = int(pow(2, x_bit_adc));
   float avg_adc_value = float(voltage_sum) / float(anzahl_spannungs_messung);
 
+  float avg_adc_value = float(adc_sum) / float(anzahl_spannungs_messung);
   //ADC LUT correction here
   float corrected_adc_value = ADC_LUT[int(avg_adc_value)];
   
