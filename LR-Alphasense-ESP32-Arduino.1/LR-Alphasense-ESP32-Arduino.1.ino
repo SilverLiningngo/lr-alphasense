@@ -271,8 +271,6 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
     adc_sum += analogRead(volt_pin);
   }
   int total_adc_res = int(pow(2, x_bit_adc));
-  float avg_adc_value = float(voltage_sum) / float(anzahl_spannungs_messung);
-
   float avg_adc_value = float(adc_sum) / float(anzahl_spannungs_messung);
   //ADC LUT correction here
   float corrected_adc_value = ADC_LUT[int(avg_adc_value)];
