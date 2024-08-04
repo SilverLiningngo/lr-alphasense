@@ -20,6 +20,7 @@
 #define BATT_ANALOG_PIN 35 // Battery voltage sense 
 #define MOTOR_PWM_PIN 19 // Pump power control
 #define GPS_PPS_PIN 4 // GPS PPS line (Pulse Per Second)
+#define ADC_VREF_FUSE 1086
 
 //Constants
 const float BATT_VOLTAGE_SCALING = 7.49; // scaling factor for voltage divider
@@ -274,6 +275,8 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
   }
   int total_adc_res = int(pow(2, x_bit_adc));
   float avg_adc_value = float(adc_sum) / float(anzahl_spannungs_messung);
+  float avg_adc_valueADC = avg_adc_value;
+  float si_voltageADC = (avg_adc_value * max_voltage) / total_adc_res;
 
   //ADC LUT calibration correction here
 //  float corrected_adc_valueLUT = ADC_LUT[int(avg_adc_value)];
@@ -281,18 +284,21 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
   
   // Use internal ESP calibration correction to get the voltage
   uint32_t raw_voltage_mV = esp_adc_cal_raw_to_voltage((uint32_t)avg_adc_value, adc_chars);
-  si_voltage = (float)raw_voltage_mV / 1000.0; // Convert mV to V
-  
-//  Serial.print("\nAvg ADC value: ");
-//  Serial.print(avg_adc_value);
-//  Serial.print("\nLUT ADC: ");
-//  Serial.print(corrected_adc_valueLUT);
-//  Serial.print("   LUT Volts: ");
-//  Serial.println(si_voltageLUT);
-//  Serial.print("Internal Cal mV: ");
-//  Serial.println(raw_voltage_mV);
-//  Serial.print("  Internal Cal Volts: ");
-//  Serial.println(si_voltage);
+  float si_voltageCAL = (float)raw_voltage_mV / 1000.0; // Convert mV to V
+
+  //  Serial.print("\nAvg ADC value: ");
+  //  Serial.print(avg_adc_valueADC);
+  //  Serial.print("   ADC Volts: ");
+  //  Serial.println(si_voltageADC);    
+  //  Serial.print("\nLUT ADC: ");
+  //  Serial.print(corrected_adc_valueLUT);
+  //  Serial.print("   LUT Volts: ");
+  //  Serial.println(si_voltageLUT);
+  //  Serial.print("ESP Cal Volts: ");
+  //  Serial.println(si_voltageCAL);
+  //  Serial.print("  Internal Cal Volts: ");
+  //  Serial.println(si_voltage);
+  si_voltage = si_voltageCAL;
   return si_voltage;
 }
 // BME280 Temp, Pressure, Humidity Sensor implementation
@@ -507,7 +513,7 @@ void setup() {
 
     // Initialize ADC calibration
   adc_chars = (esp_adc_cal_characteristics_t *)calloc(1, sizeof(esp_adc_cal_characteristics_t));
-  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, adc_chars);
+  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_12, ADC_WIDTH_BIT_12, ADC_VREF_FUSE, adc_chars);
 
   InitialiseSerial(115200);
   InitialiseRFDSerial();
