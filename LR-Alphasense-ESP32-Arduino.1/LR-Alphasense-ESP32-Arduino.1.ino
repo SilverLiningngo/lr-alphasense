@@ -1,7 +1,7 @@
 // Include libraries
 #include <Arduino.h>
 #include <LittleFS.h>
-#include "adc_lookup_table.h" // Custom generated lookup tables per ESP32 chip to compensate for non-linear ADC
+//#include "adc_lookup_table.h" // Custom generated lookup tables per ESP32 chip to compensate for non-linear ADC
 #include "BluetoothSerial.h"
 #include <Wire.h>
 #include <SPI.h>
@@ -12,13 +12,16 @@
 #include "s300i2c.h"
 #include <Adafruit_GPS.h>
 #include <Preferences.h> // Include Preferences library
+#include <esp_adc_cal.h>
 
 //Pin definitions
-#define FLOW_ANALOG_PIN 36 // Not used
+#define FLOW_ANALOG_PIN 36 // Not used in code, it is wired though and available.
 #define SO2_ANALOG_PIN 39 // SO2 voltage sense, 7.49:1 divider
 #define BATT_ANALOG_PIN 35 // Battery voltage sense 
 #define MOTOR_PWM_PIN 19 // Pump power control
 #define GPS_PPS_PIN 4 // GPS PPS line (Pulse Per Second)
+
+#define ADC_VREF_FUSE_CCD68132A7B0 1086 // mV stored in vREF ESP32 fuse for chip CCD68132A7B0
 
 //Constants
 const float BATT_VOLTAGE_SCALING = 7.49; // scaling factor for voltage divider
@@ -32,6 +35,7 @@ const char* co2Key = "co2serial"; // CO2 Sensor Serial number reference
 
 
 //Variables
+int ADC_VREF_FUSE = ADC_VREF_FUSE_CCD68132A7B0;
 volatile bool ppsTriggered = false;
 bool readSensorsAndLog = false;
 unsigned long previousMillis = 0; // Stores the last time the loop ran
@@ -59,6 +63,8 @@ String comment = "";
 String so2serial = "";
 String co2serial = "";
 float avg_adc_value_global = 0;
+
+esp_adc_cal_characteristics_t *adc_chars; // Variable for ADC calibration
 
 // Serial input buffers
 char StringInputSpeicher[500];
@@ -274,10 +280,30 @@ float readSIVoltageFromPin(int volt_pin, int anzahl_spannungs_messung, int x_bit
   int total_adc_res = int(pow(2, x_bit_adc));
   float avg_adc_value = float(adc_sum) / float(anzahl_spannungs_messung);
   avg_adc_value_global = avg_adc_value; // TEMPORARY ADC RAW GLOBAL VARIABLE
-  //ADC LUT correction here
-  float corrected_adc_value = ADC_LUT[int(avg_adc_value)];
+  float avg_adc_valueADC = avg_adc_value;
+  float si_voltageADC = (avg_adc_value * max_voltage) / total_adc_res;
+
+  //ADC LUT calibration correction here
+//  float corrected_adc_valueLUT = ADC_LUT[int(avg_adc_value)];
+//  float si_voltageLUT = (corrected_adc_valueLUT * max_voltage) / total_adc_res;
   
-  si_voltage = (corrected_adc_value * max_voltage) / total_adc_res;
+  // Use internal ESP calibration correction to get the voltage
+  uint32_t raw_voltage_mV = esp_adc_cal_raw_to_voltage((uint32_t)avg_adc_value, adc_chars);
+  float si_voltageCAL = (float)raw_voltage_mV / 1000.0; // Convert mV to V
+
+  //  Serial.print("\nAvg ADC value: ");
+  //  Serial.print(avg_adc_valueADC);
+  //  Serial.print("   ADC Volts: ");
+  //  Serial.println(si_voltageADC);    
+  //  Serial.print("\nLUT ADC: ");
+  //  Serial.print(corrected_adc_valueLUT);
+  //  Serial.print("   LUT Volts: ");
+  //  Serial.println(si_voltageLUT);
+  //  Serial.print("ESP Cal Volts: ");
+  //  Serial.println(si_voltageCAL);
+  //  Serial.print("  Internal Cal Volts: ");
+  //  Serial.println(si_voltage);
+  si_voltage = si_voltageCAL;
   return si_voltage;
 }
 // BME280 Temp, Pressure, Humidity Sensor implementation
@@ -489,6 +515,11 @@ void setup() {
   // Read sensor serial numbers at startup
   so2serial = readSerialNumberFromPreferences(so2Key);
   co2serial = readSerialNumberFromPreferences(co2Key);
+
+    // Initialize ADC calibration
+  adc_chars = (esp_adc_cal_characteristics_t *)calloc(1, sizeof(esp_adc_cal_characteristics_t));
+  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_12, ADC_WIDTH_BIT_12, ADC_VREF_FUSE, adc_chars);
+
   InitialiseSerial(115200);
   InitialiseRFDSerial();
   InitialiseBluetooth();
@@ -648,7 +679,7 @@ void loop() {
     // Create a buffer to hold the formatted string
     char chipIDStr[17]; // Enough to hold 6 hex digits of chip string + null terminator
     sprintf(chipIDStr, "%012llX", macAddress);
-    comment = "ESP32 MAC: " + String(chipIDStr) + "  SO2 SN: " + String(so2serial) + "  CO2 SN: " + String(co2serial);
+    comment = "ESP32 MAC: " + String(chipIDStr) + "  SO2 SN: " + String(so2serial) + "  CO2 SN: " + String(co2serial) + " ADCvREF: " + String(ADC_VREF_FUSE);
   }
   write_to_file_string += String(sampleStartMillis);
   write_to_file_string += ",";
