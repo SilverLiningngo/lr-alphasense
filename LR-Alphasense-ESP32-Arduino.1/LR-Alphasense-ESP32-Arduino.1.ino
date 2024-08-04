@@ -20,7 +20,8 @@
 #define BATT_ANALOG_PIN 35 // Battery voltage sense 
 #define MOTOR_PWM_PIN 19 // Pump power control
 #define GPS_PPS_PIN 4 // GPS PPS line (Pulse Per Second)
-#define ADC_VREF_FUSE 1086
+
+#define ADC_VREF_FUSE_CCD68132A7B0 1086 // mV stored in vREF ESP32 fuse for chip CCD68132A7B0
 
 //Constants
 const float BATT_VOLTAGE_SCALING = 7.49; // scaling factor for voltage divider
@@ -34,6 +35,7 @@ const char* co2Key = "co2serial"; // CO2 Sensor Serial number reference
 
 
 //Variables
+int ADC_VREF_FUSE = ADC_VREF_FUSE_CCD68132A7B0;
 volatile bool ppsTriggered = false;
 bool readSensorsAndLog = false;
 unsigned long previousMillis = 0; // Stores the last time the loop ran
@@ -673,7 +675,7 @@ void loop() {
     // Create a buffer to hold the formatted string
     char chipIDStr[17]; // Enough to hold 6 hex digits of chip string + null terminator
     sprintf(chipIDStr, "%012llX", macAddress);
-    comment = "ESP32 MAC: " + String(chipIDStr) + "  SO2 SN: " + String(so2serial) + "  CO2 SN: " + String(co2serial);
+    comment = "ESP32 MAC: " + String(chipIDStr) + "  SO2 SN: " + String(so2serial) + "  CO2 SN: " + String(co2serial) + " ADCvREF: " + String(ADC_VREF_FUSE);
   }
   write_to_file_string += String(sampleStartMillis);
   write_to_file_string += ",";
