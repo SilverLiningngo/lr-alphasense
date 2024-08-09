@@ -1,0 +1,7 @@
+DRC Rules Export File for PCB: C:\mikeprojects\altium\Projects\SilverLining\Gas_Sampler\Gas_Sampler-PCB.PcbDoc
+RuleKind=Clearance|RuleName=Polyclear|Scope=Board|Minimum=9.00
+RuleKind=Clearance|RuleName=Clearance|Scope=Board|Minimum=6.00
+RuleKind=Width|RuleName=Width|Scope=Board|Minimum=6.00
+RuleKind=SolderMaskExpansion|RuleName=SolderMaskExpansion|Scope=Board|Minimum=1.50
+RuleKind=ShortCircuit|RuleName=ShortCircuit|Scope=Board|Allowed=0
+RuleKind=MinimumAnnularRing|RuleName=MinimumAnnularRing|Scope=Board|Minimum=7.00

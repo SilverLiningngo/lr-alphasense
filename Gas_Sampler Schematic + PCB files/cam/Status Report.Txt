@@ -1,0 +1,10 @@
+Output: Generates pick and place files
+Type  : Pick Place
+From  : Variant [[No Variations]] of PCB Document [Gas_Sampler-PCB.PcbDoc]
+   Generated File[Pick Place for Gas_Sampler-PCB.txt]
+
+
+Files Generated   : 1
+Documents Printed : 0
+
+Finished Output Generation At 11:47:19 AM On 1/11/2024

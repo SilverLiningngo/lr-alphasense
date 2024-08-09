@@ -1,0 +1,14 @@
+Project Outputs Generation Report
+---------------------------------
+Start Output Generation At 11:00:46 AM On 1/30/2024
+
+Output: Export STEP
+Type  : ExportSTEP
+From  : PCB Document [Gas_Sampler-PCB.PcbDoc]
+   Generated File[Gas_Sampler-PCB.step]
+
+
+Files Generated   : 1
+Documents Printed : 0
+
+Finished Output Generation At 11:00:57 AM On 1/30/2024

@@ -1,0 +1,25 @@
+---------------------------------------------------------------------------
+NCDrill File Report For: Gas_Sampler-PCB.PcbDoc   1/11/2024  11:47:16 AM
+---------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII RoundHoles File : Gas_Sampler-PCB.TXT
+EIA File   : Gas_Sampler-PCB.DRL
+
+Tool         Hole Size           Hole Type     Hole Count Plated       Tool Travel
+---------------------------------------------------------------------------
+T1        10mil (0.254mm)          Round          186              56.12 Inch (1425.42 mm)
+T2        15mil (0.381mm)          Round          52               15.48 Inch (393.11 mm)
+T3        29.53mil (0.75006mm)     Round          18               2.55 Inch (64.77 mm)
+T4        31mil (0.7874mm)         Round          12               9.29 Inch (235.97 mm)
+T5        40mil (1.016mm)          Round          74               14.01 Inch (355.95 mm)
+T6        40.16mil (1.02006mm)     Round          2                0.12 Inch (3.00 mm)
+T7        43.31mil (1.10007mm)     Round          10               2.67 Inch (67.77 mm)
+T8        90mil (2.286mm)          Round          2                0.80 Inch (20.32 mm)
+T9        95mil (2.413mm)          Round          2                0.29 Inch (7.30 mm)
+T10       133.86mil (3.40004mm)    Round          4                13.00 Inch (330.20 mm)
+T11       145.67mil (3.70002mm)    Round          3                2.59 Inch (65.79 mm)
+---------------------------------------------------------------------------
+Totals                                            365              116.91 Inch (2969.59 mm)
+
+Total Processing Time (hh:mm:ss) : 00:00:00
