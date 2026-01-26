@@ -1,7 +1,7 @@
 Source code for the SilverLining version of the LittleRAVEN SO2/CO2 volcanic drone observation instrument. 
 This instrument and code is based on the original author's design and code published in their supplemental data.
 
-Contact dbowen@silverlining.ngo for information.
+Contact info@silverlining.ngo for information.
 
 
 Original paper:
